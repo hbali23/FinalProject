@@ -26,26 +26,5 @@
     "title": "EDA",
     "section": "Summarizations",
     "text": "Summarizations\nYou should then produce meaningful summary statistics and plots about the data you are working with (especially as it relates to your response).\nAlthough a best practice would be to split the data at hand into a training and testing set first, go ahead and do your EDA on the full data.\nBe sure to have a narrative about what you are exploring and what the summaries and graphs you created say about the relationships in your data.\n\n# Bar plot for the target variable\nggplot(diabetes_data, aes(x = Diabetes_binary)) +\n  geom_bar(fill = \"blue\", color = \"black\") +\n  ggtitle(\"Distribution of Diabetes Status\") +\n  xlab(\"Diabetes Status\") +\n  ylab(\"Count\")\n\n\n\n\n\n\n\n# Histogram of BMI\nggplot(diabetes_data, aes(x = BMI, fill = Diabetes_binary)) +\n  geom_histogram(binwidth = 1, position = \"dodge\", color = \"black\") +\n  ggtitle(\"Distribution of BMI by Diabetes Status\") +\n  xlab(\"BMI\") +\n  ylab(\"Count\") +\n  scale_fill_manual(values = c(\"blue\", \"red\"))\n\n\n\n\n\n\n\n# Bar plot for Age distribution by Diabetes Status\nggplot(diabetes_data, aes(x = Age, fill = Diabetes_binary)) +\n  geom_bar(position = \"dodge\", color = \"black\") +\n  ggtitle(\"Age Distribution by Diabetes Status\") +\n  xlab(\"Age Group\") +\n  ylab(\"Count\") +\n  scale_fill_manual(values = c(\"blue\", \"red\")) +\n  theme(axis.text.x = element_text(angle = 45, hjust = 1))\n\n\n\n\n\n\n\n# Bar plot for Physical Activity by Diabetes Status\nggplot(diabetes_data, aes(x = PhysActivity, fill = Diabetes_binary)) +\n  geom_bar(position = \"dodge\", color = \"black\") +\n  ggtitle(\"Physical Activity by Diabetes Status\") +\n  xlab(\"Physical Activity\") +\n  ylab(\"Count\") +\n  scale_fill_manual(values = c(\"blue\", \"red\"))\n\n\n\n\n\n\n\n\nClick here for the Modeling Page"
-  },
-  {
-    "objectID": "Modelling.html",
-    "href": "Modelling.html",
-    "title": "Modelling",
-    "section": "",
-    "text": "Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see https://quarto.org."
-  },
-  {
-    "objectID": "Modelling.html#quarto",
-    "href": "Modelling.html#quarto",
-    "title": "Modelling",
-    "section": "",
-    "text": "Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see https://quarto.org."
-  },
-  {
-    "objectID": "Modelling.html#running-code",
-    "href": "Modelling.html#running-code",
-    "title": "Modelling",
-    "section": "Running Code",
-    "text": "Running Code\nWhen you click the Render button a document will be generated that includes both content and the output of embedded code. You can embed code like this:\n\n1 + 1\n\n[1] 2\n\n\nYou can add options to executable code like this\n\n\n[1] 4\n\n\nThe echo: false option disables the printing of code (only output is displayed)."
   }
 ]
