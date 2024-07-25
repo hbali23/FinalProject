@@ -64,7 +64,7 @@ You should then produce meaningful summary statistics and plots about the data y
 
 Although a best practice would be to split the data at hand into a training and testing set first, go ahead and do your EDA on the full data.
 
-Be sure to have a narrative about what you are exploring and what the summaries and graphs you created say about the relationships in your data.
+Be sure to have a narrative about what you are exploring and what the summaries and graphs you created say about the relationships in your data. 
 
 ```{r}
 # Bar plot for the target variable
