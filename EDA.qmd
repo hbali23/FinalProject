@@ -6,6 +6,103 @@ editor: visual
 
 ## Introduction
 
+The Behavioral Risk Factor Surveillance System (BRFSS) is an annual health-related telephone survey conducted by the CDC, collecting responses from over 400,000 Americans on health behaviors, chronic conditions, and preventative service use since 1984. For this project, trhe dataset diabetes_binary_health_indicators_BRFSS2015.csv contains 253,680 survey responses from the CDC's BRFSS 2015. The target variable, Diabetes_binary, has two classes: 0: No diabetes and 1: Prediabetes or diabetes. The dataset has 22 featured variables. In my analysis, I will look into all of the variables except for Diabetes_binary. The variables that will be used in the EDA are the following; HighBP, HighChol, CholCheck, BMI, Smoker, Stroke, HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost, GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, and Income.
+
+The primary purpose of EDA is to understand the data and its structure, identify patterns, spot anomalies, test hypotheses, and check assumptions. This helps in selecting the right modeling techniques and ensures that the data is clean and suitable for analysis. For this analysis, the ultimate goal of modeling is to build a robust and accurate predictive model that can classify individuals into the two categories of the Diabetes_binary variable (0: No diabetes, 1: Prediabetes or diabetes). This model can then be used to identify individuals at risk and potentially guide public health interventions and strategies.
+
+## Data
+
+Use a relative path to import the data. You likely want to convert a lot of the variables to factors with meaningful level names. Check on missingness, etc
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readxl)
+```
+
+```{r}
+# Import the data
+diabetes_data <- read_excel("~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm")
+
+# Convert variables to factors
+diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1), labels = c("No Diabetes", "Prediabetes or Diabetes"))
+diabetes_data$HighBP <- factor(diabetes_data$HighBP, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$HighChol <- factor(diabetes_data$HighChol, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$CholCheck <- factor(diabetes_data$CholCheck, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$Smoker <- factor(diabetes_data$Smoker, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$Stroke <- factor(diabetes_data$Stroke, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$HeartDiseaseorAttack <- factor(diabetes_data$HeartDiseaseorAttack, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$PhysActivity <- factor(diabetes_data$PhysActivity, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$Fruits <- factor(diabetes_data$Fruits, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$Veggies <- factor(diabetes_data$Veggies, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$HvyAlcoholConsump <- factor(diabetes_data$HvyAlcoholConsump, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$AnyHealthcare <- factor(diabetes_data$AnyHealthcare, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$NoDocbcCost <- factor(diabetes_data$NoDocbcCost, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$DiffWalk <- factor(diabetes_data$DiffWalk, levels = c(0, 1), labels = c("No", "Yes"))
+diabetes_data$Sex <- factor(diabetes_data$Sex, levels = c(0, 1), labels = c("Male", "Female"))
+diabetes_data$GenHlth <- factor(diabetes_data$GenHlth, levels = 1:5, labels = c("Excellent", "Very Good", "Good", "Fair", "Poor"))
+
+# Convert Age, Education, and Income to factors with meaningful level names
+diabetes_data$Age <- factor(diabetes_data$Age, levels = 1:13, labels = c("18-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", "80 or older"))
+diabetes_data$Education <- factor(diabetes_data$Education, levels = 1:6, labels = c("Never attended school", "Elementary", "Some high school", "High school graduate", "Some college", "College graduate"))
+diabetes_data$Income <- factor(diabetes_data$Income, levels = 1:8, labels = c("Less than $10,000", "$10,000-$14,999", "$15,000-$19,999", "$20,000-$24,999", "$25,000-$34,999", "$35,000-$49,999", "$50,000-$74,999", "$75,000 or more"))
+
+# Check for missing values
+missing_values <- sapply(diabetes_data, function(x) sum(is.na(x)))
+
+# Summary of the dataset
+summary(diabetes_data)
+```
+
+## Summarizations
+
+You should then produce meaningful summary statistics and plots about the data you are working with (especially as it relates to your response).
+
+Although a best practice would be to split the data at hand into a training and testing set first, go ahead and do your EDA on the full data.
+
+Be sure to have a narrative about what you are exploring and what the summaries and graphs you created say about the relationships in your data.
+
+```{r}
+# Bar plot for the target variable
+ggplot(diabetes_data, aes(x = Diabetes_binary)) +
+  geom_bar(fill = "blue", color = "black") +
+  ggtitle("Distribution of Diabetes Status") +
+  xlab("Diabetes Status") +
+  ylab("Count")
+
+
+# Histogram of BMI
+ggplot(diabetes_data, aes(x = BMI, fill = Diabetes_binary)) +
+  geom_histogram(binwidth = 1, position = "dodge", color = "black") +
+  ggtitle("Distribution of BMI by Diabetes Status") +
+  xlab("BMI") +
+  ylab("Count") +
+  scale_fill_manual(values = c("blue", "red"))
+
+
+# Bar plot for Age distribution by Diabetes Status
+ggplot(diabetes_data, aes(x = Age, fill = Diabetes_binary)) +
+  geom_bar(position = "dodge", color = "black") +
+  ggtitle("Age Distribution by Diabetes Status") +
+  xlab("Age Group") +
+  ylab("Count") +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Bar plot for Physical Activity by Diabetes Status
+ggplot(diabetes_data, aes(x = PhysActivity, fill = Diabetes_binary)) +
+  geom_bar(position = "dodge", color = "black") +
+  ggtitle("Physical Activity by Diabetes Status") +
+  xlab("Physical Activity") +
+  ylab("Count") +
+  scale_fill_manual(values = c("blue", "red"))
+
+
+## Introduction
+
 The Behavioral Risk Factor Surveillance System (BRFSS) is an annual health-related telephone survey conducted by the CDC, collecting responses from over 400,000 Americans on health behaviors, chronic conditions, and preventative service use since 1984. For this project, trhe dataset diabetes_binary_health_indicators_BRFSS2015.csv contains 253,680 survey responses from the CDC's BRFSS 2015. The target variable, Diabetes_binary, has two classes: 0: No diabetes and 1: Prediabetes or diabetes. The dataset has 22 featured variables. In my analysis, I will look into all of the variables except for Diabetes_binary. The variables that will be used in the EDA are the following;	HighBP,	HighChol,	CholCheck,	BMI,	Smoker,	Stroke,	HeartDiseaseorAttack,	PhysActivity,	Fruits,	Veggies,	HvyAlcoholConsump,	AnyHealthcare,	NoDocbcCost,	GenHlth,	MentHlth,	PhysHlth,	DiffWalk,	Sex,	Age,	Education, and	Income.
 
 The primary purpose of EDA is to understand the data and its structure, identify patterns, spot anomalies, test hypotheses, and check assumptions. This helps in selecting the right modeling techniques and ensures that the data is clean and suitable for analysis. For this analysis, the ultimate goal of modeling is to build a robust and accurate predictive model that can classify individuals into the two categories of the Diabetes_binary variable (0: No diabetes, 1: Prediabetes or diabetes). This model can then be used to identify individuals at risk and potentially guide public health interventions and strategies.
@@ -105,4 +202,7 @@ ggplot(diabetes_data, aes(x = PhysActivity, fill = Diabetes_binary)) +
 ```
 
 
-[Click here for the Modeling Page](Modeling.html)
+
+```
+
+
