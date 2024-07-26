@@ -203,4 +203,4 @@ These additional summary statistics and visualizations provide further insights 
 ADD THE LINK HERE TO CONNECT TO MODELLING WHEN DONE AND GIVE MORE INSIGHT TO THE TAKEAWAYS OF THE EDA AND Be sure to have a narrative about what you are exploring and what the summaries and graphs
 you created say about the relationships in your data!!!
 
-[Click here for the Modeling Page](Modelling.html)
+
