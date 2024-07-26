@@ -3,3 +3,117 @@ title: "Modelling"
 format: html
 editor: visual
 ---
+
+##Basic Introduction
+Start with a basic introduction (feel free to repeat some things from the other file).
+--
+
+Log loss, also known as logistic loss or cross-entropy loss, is a performance metric used to evaluate the accuracy of a classification model, particularly in binary classification problems. It measures the uncertainty of the predictions made by the model, by comparing the predicted probabilities of the target variable to the actual binary outcomes. Log loss penalizes incorrect predictions more heavily when they are confident but wrong, and it rewards correct predictions that are confident. This makes log loss a more nuanced measure than accuracy, which simply calculates the proportion of correct predictions.
+
+Log loss is particularly useful when dealing with imbalanced datasets, where one class may be significantly more prevalent than the other. In such cases, a model could achieve high accuracy by merely predicting the majority class, but this would not necessarily reflect the model's true performance in distinguishing between the classes. Log loss addresses this by taking into account the predicted probabilities, ensuring that the model not only predicts the correct class but also assigns a high probability to its predictions. This makes log loss a preferred metric for evaluating models in scenarios where the cost of false positives and false negatives is high, or where we need to understand the confidence of the model's predictions.
+
+
+```{r}
+# Load necessary libraries
+library(caret)
+library(dplyr)
+library(tibble)
+library(readxl)
+library(tidyr)
+```
+
+##Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric
+```{r}
+# Import the data
+diabetes_data <- read_excel("~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm")
+
+# Convert Diabetes_binary to a factor with two levels
+diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1))
+
+# Ensure that the factor levels have valid R names
+levels(diabetes_data$Diabetes_binary) <- make.names(levels(diabetes_data$Diabetes_binary))
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Split the data into training (70%) and test (30%) sets
+trainIndex <- createDataPartition(diabetes_data$Diabetes_binary, p = 0.7, list = FALSE)
+trainData <- diabetes_data[trainIndex, ]
+testData <- diabetes_data[-trainIndex, ]
+
+# Define training control with 5-fold cross-validation and log loss as the metric
+train_control <- trainControl(method = "cv", number = 5, classProbs = TRUE, summaryFunction = mnLogLoss)
+```
+
+##Model 1: Basic logistic regression with no additional features.
+```{r}
+# Model 1: Basic Logistic Regression
+model1 <- train(Diabetes_binary ~ ., data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+##Model 2: Logistic regression with interaction terms.
+```{r}
+# Model 2: Logistic Regression with Interaction Terms
+formula_interaction <- Diabetes_binary ~ HighBP * HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Age + Education + Income
+model2 <- train(formula_interaction, data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+##Model 3: Logistic regression with polynomial terms.
+```{r}
+# Model 3: Logistic Regression with Polynomial Terms
+formula_polynomial <- Diabetes_binary ~ poly(BMI, 2) + poly(Age, 2) + HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
+model3 <- train(formula_polynomial, data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+##Compare Models Using Cross-Validation with Log Loss
+```{r}
+# Compare Models Using Cross-Validation with Log Loss
+resamples <- resamples(list(Basic = model1, Interaction = model2, Polynomial = model3))
+
+# Extract the mean log loss for each model
+log_loss_results <- resamples$values %>%
+  select(Resample, contains("logLoss")) %>%
+  pivot_longer(cols = contains("logLoss"), names_to = "Model", values_to = "LogLoss") %>%
+  group_by(Model) %>%
+  summarize(MeanLogLoss = mean(LogLoss, na.rm = TRUE))
+
+# Print the log loss results
+print(log_loss_results)
+
+# Determine the best model based on the lowest mean log loss
+best_model_name <- log_loss_results %>% 
+  filter(MeanLogLoss == min(MeanLogLoss)) %>% 
+  pull(Model)
+
+# Remove "~logLoss" from model names
+best_model_name <- gsub("~logLoss", "", best_model_name)
+
+# List of models to compare
+models <- list(Basic = model1, Interaction = model2, Polynomial = model3)
+```
+The model with the lowest log loss value is generally the best, as it indicates better performance in predicting class probabilities. Here the best performing model is the polynomial model.
+
+##Evaluate the Best Model on the Test Set
+```{r}
+# Select the best model
+best_model <- models[[best_model_name]]
+print(best_model)
+
+# Evaluate the Best Model on the Test Set
+predictions <- predict(best_model, newdata = testData, type = "prob")
+
+# Calculate log loss on the test set
+# Adjust the target names if needed
+actual <- as.numeric(testData$Diabetes_binary) - 1
+log_loss <- -mean((actual == 1) * log(predictions[,2]) + 
+                    (actual == 0) * log(1 - predictions[,2]))
+log_loss
+```
+
+
+
+
+
