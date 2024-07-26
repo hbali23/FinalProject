@@ -200,6 +200,5 @@ By analyzing these summary statistics and visualizations, we gain insights into 
 These additional summary statistics and visualizations provide further insights into how various health-related factors are associated with diabetes. Understanding these relationships is crucial for building a predictive model that can accurately identify individuals at risk of diabetes. By exploring these variables in depth, we can improve the model's accuracy and reliability.
 
 
-
 ADD THE LINK HERE TO CONNECT TO MODELLING WHEN DONE AND GIVE MORE INSIGHT TO THE TAKEAWAYS OF THE EDA AND Be sure to have a narrative about what you are exploring and what the summaries and graphs
 you created say about the relationships in your data!!!
