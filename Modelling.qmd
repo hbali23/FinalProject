@@ -4,14 +4,11 @@ format: html
 editor: visual
 ---
 
-##Basic Introduction
-Start with a basic introduction (feel free to repeat some things from the other file).
---
+## Basic Introduction Start with a basic introduction (feel free to repeat some things from the other file). --
 
 Log loss, also known as logistic loss or cross-entropy loss, is a performance metric used to evaluate the accuracy of a classification model, particularly in binary classification problems. It measures the uncertainty of the predictions made by the model, by comparing the predicted probabilities of the target variable to the actual binary outcomes. Log loss penalizes incorrect predictions more heavily when they are confident but wrong, and it rewards correct predictions that are confident. This makes log loss a more nuanced measure than accuracy, which simply calculates the proportion of correct predictions.
 
 Log loss is particularly useful when dealing with imbalanced datasets, where one class may be significantly more prevalent than the other. In such cases, a model could achieve high accuracy by merely predicting the majority class, but this would not necessarily reflect the model's true performance in distinguishing between the classes. Log loss addresses this by taking into account the predicted probabilities, ensuring that the model not only predicts the correct class but also assigns a high probability to its predictions. This makes log loss a preferred metric for evaluating models in scenarios where the cost of false positives and false negatives is high, or where we need to understand the confidence of the model's predictions.
-
 
 ```{r}
 # Load necessary libraries
@@ -20,9 +17,13 @@ library(dplyr)
 library(tibble)
 library(readxl)
 library(tidyr)
+library(rpart)
+library(randomForest)
+library(rpart.plot)
 ```
 
-##Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric
+## Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric
+
 ```{r}
 # Import the data
 diabetes_data <- read_excel("~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm")
@@ -45,30 +46,34 @@ testData <- diabetes_data[-trainIndex, ]
 train_control <- trainControl(method = "cv", number = 5, classProbs = TRUE, summaryFunction = mnLogLoss)
 ```
 
-##Model 1: Basic logistic regression with no additional features.
+## Model 1: Basic logistic regression with no additional features.
+
 ```{r}
 # Model 1: Basic Logistic Regression
 model1 <- train(Diabetes_binary ~ ., data = trainData, method = "glm", family = "binomial",
                 trControl = train_control, metric = "logLoss")
 ```
 
-##Model 2: Logistic regression with interaction terms.
+## Model 2: Logistic regression with interaction terms.
+
 ```{r}
-# Model 2: Logistic Regression with Interaction Terms
-formula_interaction <- Diabetes_binary ~ HighBP * HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Age + Education + Income
+# Model 2: Logistic Regression with only select few cardiohealth terms
+formula_interaction <- Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack 
 model2 <- train(formula_interaction, data = trainData, method = "glm", family = "binomial",
                 trControl = train_control, metric = "logLoss")
 ```
 
-##Model 3: Logistic regression with polynomial terms.
+## Model 3: Logistic regression with polynomial terms.
+
 ```{r}
-# Model 3: Logistic Regression with Polynomial Terms
+# Model 3: Logistic Regression with Polynomial Terms with all terms
 formula_polynomial <- Diabetes_binary ~ poly(BMI, 2) + poly(Age, 2) + HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
 model3 <- train(formula_polynomial, data = trainData, method = "glm", family = "binomial",
                 trControl = train_control, metric = "logLoss")
 ```
 
-##Compare Models Using Cross-Validation with Log Loss
+## Compare Models Using Cross-Validation with Log Loss
+
 ```{r}
 # Compare Models Using Cross-Validation with Log Loss
 resamples <- resamples(list(Basic = model1, Interaction = model2, Polynomial = model3))
@@ -94,9 +99,11 @@ best_model_name <- gsub("~logLoss", "", best_model_name)
 # List of models to compare
 models <- list(Basic = model1, Interaction = model2, Polynomial = model3)
 ```
+
 The model with the lowest log loss value is generally the best, as it indicates better performance in predicting class probabilities. Here the best performing model is the polynomial model.
 
-##Evaluate the Best Model on the Test Set
+## Evaluate the Best Model on the Test Set
+
 ```{r}
 # Select the best model
 best_model <- models[[best_model_name]]
@@ -118,4 +125,69 @@ log_loss
 
 
 
+## Classification Tree
 
+A classification tree is a decision tree used for categorizing data into classes. It is a supervised learning model that splits the data into subsets based on the values of input features. The goal is to create a model that predicts the class label of new observations based on the values of their features. The tree structure consists of nodes that represent features, branches that represent decision rules, and leaves that represent the outcome or class label.
+
+How it works: Splitting: At each node in the tree, the data is split based on the feature that best separates the classes. This split is determined by criteria such as Gini impurity, entropy, or information gain.
+Recursive Partitioning: The splitting process is repeated recursively on each subset of the data until a stopping criterion is met, such as a maximum tree depth, a minimum number of samples per leaf, or an improvement threshold.
+Pruning: To prevent overfitting, trees are often pruned by removing branches that provide little additional power to classify instances. This is done by setting a complexity parameter that controls the trade-off between tree size and fit to the training data.
+
+
+Classification tree code here 
+```{r}
+# Function to create and evaluate classification tree models
+create_and_evaluate_tree <- function(formula, trainData, testData, cp_values) {
+  results <- data.frame(CP = numeric(), Accuracy = numeric())
+  
+  for (cp in cp_values) {
+    model_tree <- rpart(formula, data = trainData, method = "class", control = rpart.control(minbucket = 20, cp = cp))
+    
+    # Predict on the test set
+    predictions <- predict(model_tree, testData, type = "class")
+    
+    # Confusion matrix to evaluate the model
+    conf_matrix <- confusionMatrix(predictions, testData$Diabetes_binary)
+    
+    # Store accuracy
+    accuracy <- conf_matrix$overall['Accuracy']
+    results <- rbind(results, data.frame(CP = cp, Accuracy = accuracy))
+  }
+  
+  # Find the best cp based on maximum accuracy
+  best_cp <- results$CP[which.max(results$Accuracy)]
+  print(paste0("Optimal Complexity Parameter: ", best_cp))
+  
+  # Fit the final model using the best cp value
+  final_tree <- rpart(formula, data = trainData, method = "class", control = rpart.control(minbucket = 20, cp = best_cp))
+  
+  # Plot the tree
+  par(mar = c(1, 1, 1, 1))  # Adjust margins (bottom, left, top, right)
+  rpart.plot(final_tree, type = 2, extra = 104, fallen.leaves = TRUE, main = paste("Classification Tree for", deparse(formula)))
+  
+  # Print the final confusion matrix for the best model
+  final_predictions <- predict(final_tree, testData, type = "class")
+  final_conf_matrix <- confusionMatrix(final_predictions, testData$Diabetes_binary)
+  print(final_conf_matrix)
+  
+  return(final_tree)
+}
+
+# Define complexity parameter values to try
+cp_values <- seq(0.000, 0.004, by = 0.001)
+
+# Model 1 Tree
+set.seed(13579)
+formula1 <- Diabetes_binary ~ .
+tree1 <- create_and_evaluate_tree(formula1, trainData, testData, cp_values)
+
+# Model 2 Tree
+set.seed(13579)
+tree2 <- create_and_evaluate_tree(formula_interaction, trainData, testData, cp_values)
+
+# Model 3 Tree
+set.seed(13579)
+tree3 <- create_and_evaluate_tree(formula_polynomial, trainData, testData, cp_values)
+
+
+```
