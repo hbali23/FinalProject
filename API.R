@@ -58,7 +58,7 @@ r <- plumb()
 #* @param Education Factor, default = most prevalent class
 #* @param Income Factor, default = most prevalent class
 #* @get /pred
-function(BMI = default_values['BMI'], Age = default_values['Age'], HighBP = default_values['HighBP'],
+pred <- function(BMI = default_values['BMI'], Age = default_values['Age'], HighBP = default_values['HighBP'],
          HighChol = default_values['HighChol'], CholCheck = default_values['CholCheck'], Smoker = default_values['Smoker'],
          Stroke = default_values['Stroke'], HeartDiseaseorAttack = default_values['HeartDiseaseorAttack'], 
          PhysActivity = default_values['PhysActivity'], Fruits = default_values['Fruits'], Veggies = default_values['Veggies'], 
@@ -83,10 +83,10 @@ function(BMI = default_values['BMI'], Age = default_values['Age'], HighBP = defa
 
 # Define the /info endpoint
 #* @get /info
-function() {
+info <- function() {
   list(
-    name = "Your Name",
-    github_url = "https://your-github-pages-site-url"
+    name = "Hanan Ali",
+    github_url = "https://github.com/hbali23/FinalProject"
   )
 }
 
