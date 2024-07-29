@@ -1,8 +1,9 @@
-# Load necessary libraries
+# Load required packages
 library(plumber)
 library(randomForest)
-library(dplyr)
 library(readxl)
+
+#* @apiTitle Diabetes Prediction API
 
 # Set seed for reproducibility
 set.seed(13579)
@@ -29,71 +30,86 @@ default_values <- sapply(diabetes_data, function(x) {
   }
 })
 
-# Create a Plumber router
-r <- plumb()
-
-# Define the /pred endpoint
-#* @apiTitle Diabetes Prediction API
-#* @apiDescription API for predicting diabetes using a random forest model
-
-#* @param BMI Numeric, default = mean(BMI)
-#* @param Age Numeric, default = mean(Age)
-#* @param HighBP Factor, default = most prevalent class
-#* @param HighChol Factor, default = most prevalent class
-#* @param CholCheck Factor, default = most prevalent class
-#* @param Smoker Factor, default = most prevalent class
-#* @param Stroke Factor, default = most prevalent class
-#* @param HeartDiseaseorAttack Factor, default = most prevalent class
-#* @param PhysActivity Factor, default = most prevalent class
-#* @param Fruits Factor, default = most prevalent class
-#* @param Veggies Factor, default = most prevalent class
-#* @param HvyAlcoholConsump Factor, default = most prevalent class
-#* @param AnyHealthcare Factor, default = most prevalent class
-#* @param NoDocbcCost Factor, default = most prevalent class
-#* @param GenHlth Factor, default = most prevalent class
-#* @param MentHlth Numeric, default = mean(MentHlth)
-#* @param PhysHlth Numeric, default = mean(PhysHlth)
-#* @param DiffWalk Factor, default = most prevalent class
-#* @param Sex Factor, default = most prevalent class
-#* @param Education Factor, default = most prevalent class
-#* @param Income Factor, default = most prevalent class
+#* Predict Diabetes Risk
+#* @param BMI:numeric BMI value
+#* @param Age:numeric Age value
+#* @param HighBP:integer Indicator for high blood pressure
+#* @param HighChol:integer Indicator for high cholesterol
+#* @param CholCheck:integer Indicator for cholesterol check
+#* @param Smoker:integer Indicator for smoking status
+#* @param Stroke:integer Indicator for stroke history
+#* @param HeartDiseaseorAttack:integer Indicator for heart disease or attack
+#* @param PhysActivity:integer Indicator for physical activity
+#* @param Fruits:integer Indicator for fruit consumption
+#* @param Veggies:integer Indicator for vegetable consumption
+#* @param HvyAlcoholConsump:integer Indicator for heavy alcohol consumption
+#* @param AnyHealthcare:integer Indicator for any healthcare access
+#* @param NoDocbcCost:integer Indicator for no doctor visit due to cost
+#* @param GenHlth:integer General health status
+#* @param MentHlth:numeric Number of bad mental health days
+#* @param PhysHlth:numeric Number of bad physical health days
+#* @param DiffWalk:integer Indicator for difficulty walking
+#* @param Sex:integer Sex of the individual
+#* @param Education:integer Education level
+#* @param Income:integer Income level
 #* @get /pred
-pred <- function(BMI = default_values['BMI'], Age = default_values['Age'], HighBP = default_values['HighBP'],
-         HighChol = default_values['HighChol'], CholCheck = default_values['CholCheck'], Smoker = default_values['Smoker'],
-         Stroke = default_values['Stroke'], HeartDiseaseorAttack = default_values['HeartDiseaseorAttack'], 
-         PhysActivity = default_values['PhysActivity'], Fruits = default_values['Fruits'], Veggies = default_values['Veggies'], 
-         HvyAlcoholConsump = default_values['HvyAlcoholConsump'], AnyHealthcare = default_values['AnyHealthcare'], 
-         NoDocbcCost = default_values['NoDocbcCost'], GenHlth = default_values['GenHlth'], MentHlth = default_values['MentHlth'], 
-         PhysHlth = default_values['PhysHlth'], DiffWalk = default_values['DiffWalk'], Sex = default_values['Sex'], 
-         Education = default_values['Education'], Income = default_values['Income']) {
+function(BMI = default_values['BMI'],
+         Age = default_values['Age'],
+         HighBP = default_values['HighBP'],
+         HighChol = default_values['HighChol'],
+         CholCheck = default_values['CholCheck'],
+         Smoker = default_values['Smoker'],
+         Stroke = default_values['Stroke'],
+         HeartDiseaseorAttack = default_values['HeartDiseaseorAttack'],
+         PhysActivity = default_values['PhysActivity'],
+         Fruits = default_values['Fruits'],
+         Veggies = default_values['Veggies'],
+         HvyAlcoholConsump = default_values['HvyAlcoholConsump'],
+         AnyHealthcare = default_values['AnyHealthcare'],
+         NoDocbcCost = default_values['NoDocbcCost'],
+         GenHlth = default_values['GenHlth'],
+         MentHlth = default_values['MentHlth'],
+         PhysHlth = default_values['PhysHlth'],
+         DiffWalk = default_values['DiffWalk'],
+         Sex = default_values['Sex'],
+         Education = default_values['Education'],
+         Income = default_values['Income']) {
   
-  new_data <- data.frame(
-    BMI = as.numeric(BMI), Age = as.numeric(Age), HighBP = as.factor(HighBP), HighChol = as.factor(HighChol), 
-    CholCheck = as.factor(CholCheck), Smoker = as.factor(Smoker), Stroke = as.factor(Stroke), 
-    HeartDiseaseorAttack = as.factor(HeartDiseaseorAttack), PhysActivity = as.factor(PhysActivity), 
-    Fruits = as.factor(Fruits), Veggies = as.factor(Veggies), HvyAlcoholConsump = as.factor(HvyAlcoholConsump), 
-    AnyHealthcare = as.factor(AnyHealthcare), NoDocbcCost = as.factor(NoDocbcCost), GenHlth = as.factor(GenHlth), 
-    MentHlth = as.numeric(MentHlth), PhysHlth = as.numeric(PhysHlth), DiffWalk = as.factor(DiffWalk), 
-    Sex = as.factor(Sex), Education = as.factor(Education), Income = as.factor(Income)
-  )
+  # Create a data frame with the input values
+  input_data <- data.frame(BMI = as.numeric(BMI),
+                           Age = as.numeric(Age),
+                           HighBP = as.factor(HighBP),
+                           HighChol = as.factor(HighChol),
+                           CholCheck = as.factor(CholCheck),
+                           Smoker = as.factor(Smoker),
+                           Stroke = as.factor(Stroke),
+                           HeartDiseaseorAttack = as.factor(HeartDiseaseorAttack),
+                           PhysActivity = as.factor(PhysActivity),
+                           Fruits = as.factor(Fruits),
+                           Veggies = as.factor(Veggies),
+                           HvyAlcoholConsump = as.factor(HvyAlcoholConsump),
+                           AnyHealthcare = as.factor(AnyHealthcare),
+                           NoDocbcCost = as.factor(NoDocbcCost),
+                           GenHlth = as.factor(GenHlth),
+                           MentHlth = as.numeric(MentHlth),
+                           PhysHlth = as.numeric(PhysHlth),
+                           DiffWalk = as.factor(DiffWalk),
+                           Sex = as.factor(Sex),
+                           Education = as.factor(Education),
+                           Income = as.factor(Income))
   
-  prediction <- predict(best_model, new_data, type = "prob")
-  return(prediction)
+  # Predict the probability of diabetes
+  prediction <- predict(best_model, input_data, type = "response")
+  
+  # Return the prediction
+  list(prediction = prediction)
 }
 
-# Define the /info endpoint
+#* Get Information
 #* @get /info
-info <- function() {
+function() {
   list(
     name = "Hanan Ali",
     github_url = "https://github.com/hbali23/FinalProject"
   )
 }
-
-# Start the Plumber API
-r$run(port = 8000)
-
-# Example function calls to the API:
-# http://localhost:8000/pred
-# http://localhost:8000/pred?BMI=30&Age=45&HighBP=1
-# http://localhost:8000/info
