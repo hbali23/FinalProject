@@ -6,6 +6,8 @@ editor: visual
 
 ## Basic Introduction Start with a basic introduction (feel free to repeat some things from the other file). --
 
+## BEFORE START OF PROOFRREADING AND EDITING MAKE SURE TO HAVE CONSISTENT MODEL VARIABLES ACROSS AND REMOVE POLYNOMAL TERMS CAUSE THEY ARE PROBLEMATIC
+
 Log loss, also known as logistic loss or cross-entropy loss, is a performance metric used to evaluate the accuracy of a classification model, particularly in binary classification problems. It measures the uncertainty of the predictions made by the model, by comparing the predicted probabilities of the target variable to the actual binary outcomes. Log loss penalizes incorrect predictions more heavily when they are confident but wrong, and it rewards correct predictions that are confident. This makes log loss a more nuanced measure than accuracy, which simply calculates the proportion of correct predictions.
 
 Log loss is particularly useful when dealing with imbalanced datasets, where one class may be significantly more prevalent than the other. In such cases, a model could achieve high accuracy by merely predicting the majority class, but this would not necessarily reflect the model's true performance in distinguishing between the classes. Log loss addresses this by taking into account the predicted probabilities, ensuring that the model not only predicts the correct class but also assigns a high probability to its predictions. This makes log loss a preferred metric for evaluating models in scenarios where the cost of false positives and false negatives is high, or where we need to understand the confidence of the model's predictions.
