@@ -186,74 +186,86 @@ Attaching package: 'randomForest'</code></pre>
 
     margin</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rpart.plot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rpart.plot)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)  <span class="co"># For parallel processing</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: foreach</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: iterators</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: parallel</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)    <span class="co"># For detectCores()</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(e1071)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="adjust-factor-levels-and-set-up-cross-validation-and-log-loss-metric" class="level2">
 <h2 class="anchored" data-anchor-id="adjust-factor-levels-and-set-up-cross-validation-and-log-loss-metric">Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>diabetes_data <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm"</span>)</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Diabetes_binary to a factor with two levels</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>diabetes_data<span class="sc">$</span>Diabetes_binary <span class="ot">&lt;-</span> <span class="fu">factor</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure that the factor levels have valid R names</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary) <span class="ot">&lt;-</span> <span class="fu">make.names</span>(<span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary))</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the data into training (70%) and test (30%) sets</span></span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>trainIndex <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>trainData <span class="ot">&lt;-</span> diabetes_data[trainIndex, ]</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>testData <span class="ot">&lt;-</span> diabetes_data[<span class="sc">-</span>trainIndex, ]</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Define training control with 5-fold cross-validation and log loss as the metric</span></span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>train_control <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">"cv"</span>, <span class="at">number =</span> <span class="dv">5</span>, <span class="at">classProbs =</span> <span class="cn">TRUE</span>, <span class="at">summaryFunction =</span> mnLogLoss)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>diabetes_data <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm"</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Diabetes_binary to a factor with two levels</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>diabetes_data<span class="sc">$</span>Diabetes_binary <span class="ot">&lt;-</span> <span class="fu">factor</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure that the factor levels have valid R names</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary) <span class="ot">&lt;-</span> <span class="fu">make.names</span>(<span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the data into training (70%) and test (30%) sets</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>trainIndex <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>trainData <span class="ot">&lt;-</span> diabetes_data[trainIndex, ]</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>testData <span class="ot">&lt;-</span> diabetes_data[<span class="sc">-</span>trainIndex, ]</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Define training control with 5-fold cross-validation and log loss as the metric</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>train_control <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">"cv"</span>, <span class="at">number =</span> <span class="dv">5</span>, <span class="at">classProbs =</span> <span class="cn">TRUE</span>, <span class="at">summaryFunction =</span> mnLogLoss)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="model-1-basic-logistic-regression-with-no-additional-features." class="level2">
 <h2 class="anchored" data-anchor-id="model-1-basic-logistic-regression-with-no-additional-features.">Model 1: Basic logistic regression with no additional features.</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1: Basic Logistic Regression</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>model1 <span class="ot">&lt;-</span> <span class="fu">train</span>(Diabetes_binary <span class="sc">~</span> ., <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1: Basic Logistic Regression</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>model1 <span class="ot">&lt;-</span> <span class="fu">train</span>(Diabetes_binary <span class="sc">~</span> ., <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="model-2-logistic-regression-with-interaction-terms." class="level2">
-<h2 class="anchored" data-anchor-id="model-2-logistic-regression-with-interaction-terms.">Model 2: Logistic regression with interaction terms.</h2>
+<section id="model-2-logistic-regression-with-few-cardiohealth-terms." class="level2">
+<h2 class="anchored" data-anchor-id="model-2-logistic-regression-with-few-cardiohealth-terms.">Model 2: Logistic regression with few cardiohealth terms.</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2: Logistic Regression with only select few cardiohealth terms</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>formula_interaction <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>model2 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_interaction, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2: Logistic Regression with only select few cardiohealth terms</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>formula_interaction <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>model2 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_interaction, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="model-3-logistic-regression-with-polynomial-terms." class="level2">
-<h2 class="anchored" data-anchor-id="model-3-logistic-regression-with-polynomial-terms.">Model 3: Logistic regression with polynomial terms.</h2>
+<section id="model-3-logistic-regression-with-polynomial-terms-and-all-terms." class="level2">
+<h2 class="anchored" data-anchor-id="model-3-logistic-regression-with-polynomial-terms-and-all-terms.">Model 3: Logistic regression with polynomial terms and all terms.</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3: Logistic Regression with Polynomial Terms with all terms</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>formula_polynomial <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> <span class="fu">poly</span>(BMI, <span class="dv">2</span>) <span class="sc">+</span> <span class="fu">poly</span>(Age, <span class="dv">2</span>) <span class="sc">+</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>model3 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_polynomial, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3: Logistic Regression with Polynomial Terms with all terms</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>formula_polynomial <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> <span class="fu">poly</span>(BMI, <span class="dv">2</span>) <span class="sc">+</span> <span class="fu">poly</span>(Age, <span class="dv">2</span>) <span class="sc">+</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>model3 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_polynomial, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="compare-models-using-cross-validation-with-log-loss" class="level2">
 <h2 class="anchored" data-anchor-id="compare-models-using-cross-validation-with-log-loss">Compare Models Using Cross-Validation with Log Loss</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare Models Using Cross-Validation with Log Loss</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>resamples <span class="ot">&lt;-</span> <span class="fu">resamples</span>(<span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">Interaction =</span> model2, <span class="at">Polynomial =</span> model3))</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the mean log loss for each model</span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>log_loss_results <span class="ot">&lt;-</span> resamples<span class="sc">$</span>values <span class="sc">%&gt;%</span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Resample, <span class="fu">contains</span>(<span class="st">"logLoss"</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">contains</span>(<span class="st">"logLoss"</span>), <span class="at">names_to =</span> <span class="st">"Model"</span>, <span class="at">values_to =</span> <span class="st">"LogLoss"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Model) <span class="sc">%&gt;%</span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">MeanLogLoss =</span> <span class="fu">mean</span>(LogLoss, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the log loss results</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(log_loss_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare Models Using Cross-Validation with Log Loss</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>resamples <span class="ot">&lt;-</span> <span class="fu">resamples</span>(<span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">Interaction =</span> model2, <span class="at">Polynomial =</span> model3))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the mean log loss for each model</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>log_loss_results <span class="ot">&lt;-</span> resamples<span class="sc">$</span>values <span class="sc">%&gt;%</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Resample, <span class="fu">contains</span>(<span class="st">"logLoss"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">contains</span>(<span class="st">"logLoss"</span>), <span class="at">names_to =</span> <span class="st">"Model"</span>, <span class="at">values_to =</span> <span class="st">"LogLoss"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Model) <span class="sc">%&gt;%</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">MeanLogLoss =</span> <span class="fu">mean</span>(LogLoss, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the log loss results</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(log_loss_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 2
   Model               MeanLogLoss
@@ -262,25 +274,25 @@ Attaching package: 'randomForest'</code></pre>
 2 Interaction~logLoss       0.343
 3 Polynomial~logLoss        0.317</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the best model based on the lowest mean log loss</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> log_loss_results <span class="sc">%&gt;%</span> </span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(MeanLogLoss <span class="sc">==</span> <span class="fu">min</span>(MeanLogLoss)) <span class="sc">%&gt;%</span> </span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(Model)</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove "~logLoss" from model names</span></span>
-<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"~logLoss"</span>, <span class="st">""</span>, best_model_name)</span>
-<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="co"># List of models to compare</span></span>
-<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">Interaction =</span> model2, <span class="at">Polynomial =</span> model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the best model based on the lowest mean log loss</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> log_loss_results <span class="sc">%&gt;%</span> </span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(MeanLogLoss <span class="sc">==</span> <span class="fu">min</span>(MeanLogLoss)) <span class="sc">%&gt;%</span> </span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(Model)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove "~logLoss" from model names</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"~logLoss"</span>, <span class="st">""</span>, best_model_name)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co"># List of models to compare</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">Interaction =</span> model2, <span class="at">Polynomial =</span> model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The model with the lowest log loss value is generally the best, as it indicates better performance in predicting class probabilities. Here the best performing model is the polynomial model.</p>
 </section>
 <section id="evaluate-the-best-model-on-the-test-set" class="level2">
 <h2 class="anchored" data-anchor-id="evaluate-the-best-model-on-the-test-set">Evaluate the Best Model on the Test Set</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select the best model</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> models[[best_model_name]]</span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select the best model</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> models[[best_model_name]]</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generalized Linear Model 
 
@@ -296,77 +308,98 @@ Resampling results:
   logLoss  
   0.3165827</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Model on the Test Set</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(best_model, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate log loss on the test set</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Adjust the target names if needed</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>actual <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>log_loss <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((actual <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions[,<span class="dv">2</span>]) <span class="sc">+</span> </span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>                    (actual <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions[,<span class="dv">2</span>]))</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>log_loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Model on the Test Set</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(best_model, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate log loss on the test set</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Adjust the target names if needed</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>actual <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>log_loss <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((actual <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions[,<span class="dv">2</span>]) <span class="sc">+</span> </span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>                    (actual <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions[,<span class="dv">2</span>]))</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>log_loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.3126407</code></pre>
 </div>
+</div>
+<p>FINAL COMPARISION OF MODELS FOR LOG: IF IT WORKS KEEP THIS PART AND DELETE FROM 112-120</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Logistic Regression Models on the Test Set</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For model1</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>predictions1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model1, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>log_loss1 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions1[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions1[,<span class="dv">2</span>]))</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co"># For model2</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>predictions2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model2, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>log_loss2 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions2[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions2[,<span class="dv">2</span>]))</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="co"># For model3</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>predictions3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model3, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>log_loss3 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions3[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions3[,<span class="dv">2</span>]))</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Store log losses</span></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>log_loss_lr <span class="ot">&lt;-</span> <span class="fu">c</span>(log_loss1, log_loss2, log_loss3)</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(log_loss_lr) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Basic"</span>, <span class="st">"Interaction"</span>, <span class="st">"Polynomial"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="classification-tree" class="level2">
 <h2 class="anchored" data-anchor-id="classification-tree">Classification Tree</h2>
 <p>A classification tree is a decision tree used for categorizing data into classes. It is a supervised learning model that splits the data into subsets based on the values of input features. The goal is to create a model that predicts the class label of new observations based on the values of their features. The tree structure consists of nodes that represent features, branches that represent decision rules, and leaves that represent the outcome or class label.</p>
 <p>How it works: Splitting: At each node in the tree, the data is split based on the feature that best separates the classes. This split is determined by criteria such as Gini impurity, entropy, or information gain. Recursive Partitioning: The splitting process is repeated recursively on each subset of the data until a stopping criterion is met, such as a maximum tree depth, a minimum number of samples per leaf, or an improvement threshold. Pruning: To prevent overfitting, trees are often pruned by removing branches that provide little additional power to classify instances. This is done by setting a complexity parameter that controls the trade-off between tree size and fit to the training data.</p>
-<p>Classification tree code here</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to create and evaluate classification tree models</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>create_and_evaluate_tree <span class="ot">&lt;-</span> <span class="cf">function</span>(formula, trainData, testData, cp_values) {</span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">CP =</span> <span class="fu">numeric</span>(), <span class="at">Accuracy =</span> <span class="fu">numeric</span>())</span>
-<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (cp <span class="cf">in</span> cp_values) {</span>
-<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    model_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> cp))</span>
-<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predict on the test set</span></span>
-<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
-<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Confusion matrix to evaluate the model</span></span>
-<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
-<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Store accuracy</span></span>
-<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>    accuracy <span class="ot">&lt;-</span> conf_matrix<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
-<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>    results <span class="ot">&lt;-</span> <span class="fu">rbind</span>(results, <span class="fu">data.frame</span>(<span class="at">CP =</span> cp, <span class="at">Accuracy =</span> accuracy))</span>
-<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the best cp based on maximum accuracy</span></span>
-<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>  best_cp <span class="ot">&lt;-</span> results<span class="sc">$</span>CP[<span class="fu">which.max</span>(results<span class="sc">$</span>Accuracy)]</span>
-<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Optimal Complexity Parameter: "</span>, best_cp))</span>
-<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fit the final model using the best cp value</span></span>
-<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>  final_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> best_cp))</span>
-<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Plot the tree</span></span>
-<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))  <span class="co"># Adjust margins (bottom, left, top, right)</span></span>
-<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rpart.plot</span>(final_tree, <span class="at">type =</span> <span class="dv">2</span>, <span class="at">extra =</span> <span class="dv">104</span>, <span class="at">fallen.leaves =</span> <span class="cn">TRUE</span>, <span class="at">main =</span> <span class="fu">paste</span>(<span class="st">"Classification Tree for"</span>, <span class="fu">deparse</span>(formula)))</span>
-<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print the final confusion matrix for the best model</span></span>
-<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a>  final_predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(final_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
-<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a>  final_conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(final_predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
-<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(final_conf_matrix)</span>
-<span id="cb26-34"><a href="#cb26-34" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb26-35"><a href="#cb26-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(final_tree)</span>
-<span id="cb26-36"><a href="#cb26-36" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb26-37"><a href="#cb26-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-38"><a href="#cb26-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Define complexity parameter values to try</span></span>
-<span id="cb26-39"><a href="#cb26-39" aria-hidden="true" tabindex="-1"></a>cp_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.000</span>, <span class="fl">0.004</span>, <span class="at">by =</span> <span class="fl">0.001</span>)</span>
-<span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1 Tree</span></span>
-<span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
-<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>formula1 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> .</span>
-<span id="cb26-44"><a href="#cb26-44" aria-hidden="true" tabindex="-1"></a>tree1 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula1, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to create and evaluate classification tree models</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>create_and_evaluate_tree <span class="ot">&lt;-</span> <span class="cf">function</span>(formula, trainData, testData, cp_values) {</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">CP =</span> <span class="fu">numeric</span>(), <span class="at">Accuracy =</span> <span class="fu">numeric</span>())</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (cp <span class="cf">in</span> cp_values) {</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    model_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> cp))</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predict on the test set</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Confusion matrix to evaluate the model</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Store accuracy</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    accuracy <span class="ot">&lt;-</span> conf_matrix<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    results <span class="ot">&lt;-</span> <span class="fu">rbind</span>(results, <span class="fu">data.frame</span>(<span class="at">CP =</span> cp, <span class="at">Accuracy =</span> accuracy))</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the best cp based on maximum accuracy</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>  best_cp <span class="ot">&lt;-</span> results<span class="sc">$</span>CP[<span class="fu">which.max</span>(results<span class="sc">$</span>Accuracy)]</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Optimal Complexity Parameter: "</span>, best_cp))</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fit the final model using the best cp value</span></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>  final_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> best_cp))</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Plot the tree</span></span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))  <span class="co"># Adjust margins (bottom, left, top, right)</span></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rpart.plot</span>(final_tree, <span class="at">type =</span> <span class="dv">2</span>, <span class="at">extra =</span> <span class="dv">104</span>, <span class="at">fallen.leaves =</span> <span class="cn">TRUE</span>, <span class="at">main =</span> <span class="fu">paste</span>(<span class="st">"Classification Tree for"</span>, <span class="fu">deparse</span>(formula)))</span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print the final confusion matrix for the best model</span></span>
+<span id="cb31-31"><a href="#cb31-31" aria-hidden="true" tabindex="-1"></a>  final_predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(final_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb31-32"><a href="#cb31-32" aria-hidden="true" tabindex="-1"></a>  final_conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(final_predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb31-33"><a href="#cb31-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(final_conf_matrix)</span>
+<span id="cb31-34"><a href="#cb31-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-35"><a href="#cb31-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">tree =</span> final_tree, <span class="at">accuracy =</span> <span class="fu">max</span>(results<span class="sc">$</span>Accuracy)))</span>
+<span id="cb31-36"><a href="#cb31-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb31-37"><a href="#cb31-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-38"><a href="#cb31-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Define complexity parameter values to try</span></span>
+<span id="cb31-39"><a href="#cb31-39" aria-hidden="true" tabindex="-1"></a>cp_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.000</span>, <span class="fl">0.004</span>, <span class="at">by =</span> <span class="fl">0.001</span>)</span>
+<span id="cb31-40"><a href="#cb31-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-41"><a href="#cb31-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1 Classification Tree</span></span>
+<span id="cb31-42"><a href="#cb31-42" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb31-43"><a href="#cb31-43" aria-hidden="true" tabindex="-1"></a>formula1 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> .</span>
+<span id="cb31-44"><a href="#cb31-44" aria-hidden="true" tabindex="-1"></a>tree1 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula1, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Modelling_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Modelling_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -399,16 +432,17 @@ Prediction    X0    X1
        'Positive' Class : X0              
                                           </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2 Tree</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>tree2 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula_interaction, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2 Classification Tree</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>formula2 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>tree2 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula2, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Modelling_files/figure-html/unnamed-chunk-8-2.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Modelling_files/figure-html/unnamed-chunk-9-2.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -441,16 +475,17 @@ Prediction    X0    X1
        'Positive' Class : X0             
                                          </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3 Tree</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>tree3 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula_polynomial, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3 Classification Tree</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>formula3 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> <span class="fu">poly</span>(BMI, <span class="dv">2</span>) <span class="sc">+</span> <span class="fu">poly</span>(Age, <span class="dv">2</span>) <span class="sc">+</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>tree3 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula3, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Modelling_files/figure-html/unnamed-chunk-8-3.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Modelling_files/figure-html/unnamed-chunk-9-3.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -482,6 +517,244 @@ Prediction    X0    X1
                                           
        'Positive' Class : X0              
                                           </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the accuracy of the three classification tree models</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>accuracies <span class="ot">&lt;-</span> <span class="fu">c</span>(tree1<span class="sc">$</span>accuracy, tree2<span class="sc">$</span>accuracy, tree3<span class="sc">$</span>accuracy)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>best_tree_index <span class="ot">&lt;-</span> <span class="fu">which.max</span>(accuracies)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>best_tree_model <span class="ot">&lt;-</span> <span class="fu">list</span>(tree1, tree2, tree3)[[best_tree_index]]</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the best classification tree model</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"The best classification tree model is:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best classification tree model is:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_tree_model<span class="sc">$</span>tree)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>n= 177577 
+
+node), split, n, loss, yval, (yprob)
+      * denotes terminal node
+
+   1) root 177577 24743 X0 (0.8606633 0.1393367)  
+     2) HighBP&lt; 0.5 101219  6167 X0 (0.9390727 0.0609273) *
+     3) HighBP&gt;=0.5 76358 18576 X0 (0.7567249 0.2432751)  
+       6) GenHlth&lt; 3.5 56188 10556 X0 (0.8121307 0.1878693) *
+       7) GenHlth&gt;=3.5 20170  8020 X0 (0.6023798 0.3976202)  
+        14) BMI&lt; 27.5 6931  1891 X0 (0.7271678 0.2728322) *
+        15) BMI&gt;=27.5 13239  6129 X0 (0.5370496 0.4629504)  
+          30) HighChol&lt; 0.5 4134  1457 X0 (0.6475568 0.3524432) *
+          31) HighChol&gt;=0.5 9105  4433 X1 (0.4868753 0.5131247)  
+            62) BMI&lt; 34.5 5211  2383 X0 (0.5426981 0.4573019)  
+             124) Age&lt; 6.5 530   161 X0 (0.6962264 0.3037736) *
+             125) Age&gt;=6.5 4681  2222 X0 (0.5253151 0.4746849)  
+               250) HvyAlcoholConsump&gt;=0.5 128    30 X0 (0.7656250 0.2343750) *
+               251) HvyAlcoholConsump&lt; 0.5 4553  2192 X0 (0.5185592 0.4814408)  
+                 502) GenHlth&lt; 4.5 3162  1455 X0 (0.5398482 0.4601518) *
+                 503) GenHlth&gt;=4.5 1391   654 X1 (0.4701653 0.5298347)  
+                  1006) HeartDiseaseorAttack&lt; 0.5 767   358 X0 (0.5332464 0.4667536)  
+                    2012) PhysHlth&gt;=15.5 581   249 X0 (0.5714286 0.4285714) *
+                    2013) PhysHlth&lt; 15.5 186    77 X1 (0.4139785 0.5860215) *
+                  1007) HeartDiseaseorAttack&gt;=0.5 624   245 X1 (0.3926282 0.6073718) *
+            63) BMI&gt;=34.5 3894  1605 X1 (0.4121726 0.5878274) *</code></pre>
+</div>
+</div>
+<p>IF THIS WORKS JUST FINE THEN DELETE 217-224</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Classification Tree Models on the Test Set</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree1</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>predictions_tree1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree1<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>accuracy_tree1 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree1, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree2</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>predictions_tree2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree2<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>accuracy_tree2 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree2, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree3</span></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>predictions_tree3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree3<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>accuracy_tree3 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree3, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Store accuracies</span></span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>accuracy_tree <span class="ot">&lt;-</span> <span class="fu">c</span>(accuracy_tree1, accuracy_tree2, accuracy_tree3)</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(accuracy_tree) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Basic"</span>, <span class="st">"Interaction"</span>, <span class="st">"Polynomial"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="random-forest" class="level2">
+<h2 class="anchored" data-anchor-id="random-forest">Random Forest</h2>
+<p>What is a Random Forest? A random forest is an ensemble learning method used for classification, regression, and other tasks. It operates by constructing multiple decision trees during training and outputs the class that is the mode of the classes (classification) or mean prediction (regression) of the individual trees.</p>
+<p>Key characteristics of random forests:</p>
+<p>Ensemble Method: Combines multiple decision trees to improve the overall performance. Bagging (Bootstrap Aggregating): Each tree is trained on a random subset of the training data, which is sampled with replacement. Feature Randomness: During the splitting of each node, a random subset of features is chosen, ensuring that the trees are diverse and less correlated. Why Use Random Forests? Improved Accuracy: By aggregating multiple trees, random forests tend to improve prediction accuracy compared to individual decision trees. Reduced Overfitting: Decision trees can be prone to overfitting, especially on noisy data. Random forests mitigate this by averaging multiple trees, which reduces the variance. Robustness: Random forests are robust to outliers and noise in the data. Feature Importance: They provide insights into feature importance, which helps in understanding the impact of different features on the target variable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>diabetes_data <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm"</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Diabetes_binary to a factor with two levels</span></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>diabetes_data<span class="sc">$</span>Diabetes_binary <span class="ot">&lt;-</span> <span class="fu">factor</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure that the factor levels have valid R names</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary) <span class="ot">&lt;-</span> <span class="fu">make.names</span>(<span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary))</span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the data into training (70%) and test (30%) sets</span></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>trainIndex <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>trainData <span class="ot">&lt;-</span> diabetes_data[trainIndex, ]</span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>testData <span class="ot">&lt;-</span> diabetes_data[<span class="sc">-</span>trainIndex, ]</span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the randomForest models</span></span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>formula1 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> .</span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>model_1_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula1, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">ncol</span>(trainData) <span class="sc">/</span> <span class="dv">3</span>, <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2</span></span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>formula2 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a>model_2_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula2, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">floor</span>((<span class="fu">ncol</span>(trainData) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">3</span>), <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a><span class="co">#Model 3</span></span>
+<span id="cb45-27"><a href="#cb45-27" aria-hidden="true" tabindex="-1"></a>formula3 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span>  HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb45-28"><a href="#cb45-28" aria-hidden="true" tabindex="-1"></a>model_3_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula3, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">ncol</span>(trainData) <span class="sc">/</span> <span class="dv">3</span>, <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-29"><a href="#cb45-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-30"><a href="#cb45-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict probabilities</span></span>
+<span id="cb45-31"><a href="#cb45-31" aria-hidden="true" tabindex="-1"></a>model_1_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_1_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-32"><a href="#cb45-32" aria-hidden="true" tabindex="-1"></a>model_2_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_2_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-33"><a href="#cb45-33" aria-hidden="true" tabindex="-1"></a>model_3_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_3_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-34"><a href="#cb45-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-35"><a href="#cb45-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Random Forest Models on the Test Set</span></span>
+<span id="cb45-36"><a href="#cb45-36" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf1</span></span>
+<span id="cb45-37"><a href="#cb45-37" aria-hidden="true" tabindex="-1"></a>predictions_rf1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_1_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-38"><a href="#cb45-38" aria-hidden="true" tabindex="-1"></a>accuracy_rf1 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf1, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-39"><a href="#cb45-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-40"><a href="#cb45-40" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf2</span></span>
+<span id="cb45-41"><a href="#cb45-41" aria-hidden="true" tabindex="-1"></a>predictions_rf2 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_2_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-42"><a href="#cb45-42" aria-hidden="true" tabindex="-1"></a>accuracy_rf2 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf2, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-43"><a href="#cb45-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-44"><a href="#cb45-44" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf3</span></span>
+<span id="cb45-45"><a href="#cb45-45" aria-hidden="true" tabindex="-1"></a>predictions_rf3 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_3_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-46"><a href="#cb45-46" aria-hidden="true" tabindex="-1"></a>accuracy_rf3 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf3, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-47"><a href="#cb45-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-48"><a href="#cb45-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Store accuracies and other metrics</span></span>
+<span id="cb45-49"><a href="#cb45-49" aria-hidden="true" tabindex="-1"></a>accuracy_rf <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb45-50"><a href="#cb45-50" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Basic"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-51"><a href="#cb45-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf1<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-52"><a href="#cb45-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf1<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-53"><a href="#cb45-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-54"><a href="#cb45-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-55"><a href="#cb45-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-56"><a href="#cb45-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-57"><a href="#cb45-57" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-58"><a href="#cb45-58" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb45-59"><a href="#cb45-59" aria-hidden="true" tabindex="-1"></a>  <span class="st">"High Chol"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-60"><a href="#cb45-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf2<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-61"><a href="#cb45-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf2<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-62"><a href="#cb45-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-63"><a href="#cb45-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-64"><a href="#cb45-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-65"><a href="#cb45-65" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-66"><a href="#cb45-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-67"><a href="#cb45-67" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb45-68"><a href="#cb45-68" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polynomial"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-69"><a href="#cb45-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf3<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-70"><a href="#cb45-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf3<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-71"><a href="#cb45-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-72"><a href="#cb45-72" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-73"><a href="#cb45-73" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-74"><a href="#cb45-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-75"><a href="#cb45-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-76"><a href="#cb45-76" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-77"><a href="#cb45-77" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-78"><a href="#cb45-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-79"><a href="#cb45-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract accuracy values for comparison</span></span>
+<span id="cb45-80"><a href="#cb45-80" aria-hidden="true" tabindex="-1"></a>rf_accuracies <span class="ot">&lt;-</span> <span class="fu">sapply</span>(accuracy_rf, <span class="cf">function</span>(x) x<span class="sc">$</span>Accuracy)</span>
+<span id="cb45-81"><a href="#cb45-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-82"><a href="#cb45-82" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the best random forest model based on accuracy</span></span>
+<span id="cb45-83"><a href="#cb45-83" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"The best random forest model based on accuracy is:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best random forest model based on accuracy is:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>best_rf_model <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(rf_accuracies))</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_rf_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "High Chol.Accuracy"</code></pre>
+</div>
+</div>
+<p>Compare All Models</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>log_loss_lr <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">LogisticRegressionBasic =</span> <span class="fl">0.20</span>, <span class="at">LogisticRegressionInteraction =</span> <span class="fl">0.22</span>, <span class="at">LogisticRegressionPolynomial =</span> <span class="fl">0.21</span>) <span class="co"># Placeholder values</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>accuracy_tree <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.83</span>, <span class="fl">0.85</span>, <span class="fl">0.84</span>) <span class="co"># Placeholder values for classification tree models</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"Logistic Regression Basic"</span>, <span class="st">"Logistic Regression Interaction"</span>, <span class="st">"Logistic Regression Polynomial"</span>,</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Classification Tree Basic"</span>, <span class="st">"Classification Tree Interaction"</span>, <span class="st">"Classification Tree Polynomial"</span>,</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Random Forest Basic"</span>, <span class="st">"Random Forest High Chol"</span>, <span class="st">"Random Forest Polynomial"</span>),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">LogLoss =</span> <span class="fu">c</span>(log_loss_lr, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">6</span>)),</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Accuracy =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">3</span>), accuracy_tree, rf_accuracies)</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the comparison table</span></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                            Model LogLoss  Accuracy
+1       Logistic Regression Basic    0.20        NA
+2 Logistic Regression Interaction    0.22        NA
+3  Logistic Regression Polynomial    0.21        NA
+4       Classification Tree Basic      NA 0.8300000
+5 Classification Tree Interaction      NA 0.8500000
+6  Classification Tree Polynomial      NA 0.8400000
+7             Random Forest Basic      NA 0.8590726
+8         Random Forest High Chol      NA 0.8621605
+9        Random Forest Polynomial      NA 0.8547495</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the best model based on the metric</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>best_log_loss_model <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.min</span>(log_loss_lr))</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>best_accuracy_model_tree <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(accuracy_tree))</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>best_accuracy_model_rf <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(rf_accuracies))</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Output the best model based on log loss and accuracy</span></span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Logistic Regression Model (based on log loss):"</span>, best_log_loss_model))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Logistic Regression Model (based on log loss): LogisticRegressionBasic"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Classification Tree Model (based on accuracy):"</span>, best_accuracy_model_tree))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Classification Tree Model (based on accuracy): "</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Random Forest Model (based on accuracy):"</span>, best_accuracy_model_rf))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Random Forest Model (based on accuracy): High Chol.Accuracy"</code></pre>
+</div>
+</div>
+<p>Choosing Winner</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a detailed comparison table</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"Logistic Regression Basic"</span>, <span class="st">"Logistic Regression Interaction"</span>, <span class="st">"Logistic Regression Polynomial"</span>,</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Classification Tree Basic"</span>, <span class="st">"Classification Tree Interaction"</span>, <span class="st">"Classification Tree Polynomial"</span>,</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Random Forest Basic"</span>, <span class="st">"Random Forest High Chol"</span>, <span class="st">"Random Forest Polynomial"</span>),</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Accuracy =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">3</span>), accuracy_tree, rf_accuracies),</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">LogLoss =</span> <span class="fu">c</span>(log_loss_lr, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">6</span>))</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the comparison table</span></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                            Model  Accuracy LogLoss
+1       Logistic Regression Basic        NA    0.20
+2 Logistic Regression Interaction        NA    0.22
+3  Logistic Regression Polynomial        NA    0.21
+4       Classification Tree Basic 0.8300000      NA
+5 Classification Tree Interaction 0.8500000      NA
+6  Classification Tree Polynomial 0.8400000      NA
+7             Random Forest Basic 0.8590726      NA
+8         Random Forest High Chol 0.8621605      NA
+9        Random Forest Polynomial 0.8547495      NA</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Choosing the best model based on accuracy</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>best_model_index <span class="ot">&lt;-</span> <span class="fu">which.max</span>(comparison<span class="sc">$</span>Accuracy)</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> comparison<span class="sc">$</span>Model[best_model_index]</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Output the best overall model</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"The best overall model based on accuracy is:"</span>, best_model))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best overall model based on accuracy is: Random Forest High Chol"</code></pre>
 </div>
 </div>
 
