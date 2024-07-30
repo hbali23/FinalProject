@@ -1,7 +1,8 @@
-# Load required packages
+# api.R
 library(plumber)
 library(randomForest)
 library(readxl)
+library(caret)
 
 #* @apiTitle Diabetes Prediction API
 
@@ -9,24 +10,36 @@ library(readxl)
 set.seed(13579)
 
 # Read in the data
-diabetes_data <- read_excel("~/Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm")
+diabetes_data <- read_excel("diabetes_binary_health_indicators_BRFSS2015.xlsm")
 
 # Convert Diabetes_binary to a factor with two levels
 diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1))
+
+# Ensure that the factor levels have valid R names
 levels(diabetes_data$Diabetes_binary) <- make.names(levels(diabetes_data$Diabetes_binary))
 
+# Split the data into training (70%) and test (30%) sets
+trainIndex <- createDataPartition(diabetes_data$Diabetes_binary, p = 0.7, list = FALSE)
+trainData <- diabetes_data[trainIndex, ]
+testData <- diabetes_data[-trainIndex, ]
+
 # Define the best model formula
-best_model_formula <- Diabetes_binary ~ HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
+best_model_formula <- Diabetes_binary ~ HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack 
 
 # Fit the best model
 best_model <- randomForest(best_model_formula, data = diabetes_data, mtry = floor((ncol(diabetes_data) - 1) / 3), ntree = 50, importance = TRUE)
 
-# Define default values for predictors
+# Compute default values for numeric and categorical variables
 default_values <- sapply(diabetes_data, function(x) {
   if (is.numeric(x)) {
+    # Return the mean for numeric columns
     return(mean(x, na.rm = TRUE))
-  } else {
+  } else if (is.factor(x) || is.character(x)) {
+    # Return the most frequent value for categorical columns
     return(as.character(sort(table(x), decreasing = TRUE)[1]))
+  } else {
+    # Return NA for unknown types
+    return(NA)
   }
 })
 
@@ -39,19 +52,6 @@ default_values <- sapply(diabetes_data, function(x) {
 #* @param Smoker:integer Indicator for smoking status
 #* @param Stroke:integer Indicator for stroke history
 #* @param HeartDiseaseorAttack:integer Indicator for heart disease or attack
-#* @param PhysActivity:integer Indicator for physical activity
-#* @param Fruits:integer Indicator for fruit consumption
-#* @param Veggies:integer Indicator for vegetable consumption
-#* @param HvyAlcoholConsump:integer Indicator for heavy alcohol consumption
-#* @param AnyHealthcare:integer Indicator for any healthcare access
-#* @param NoDocbcCost:integer Indicator for no doctor visit due to cost
-#* @param GenHlth:integer General health status
-#* @param MentHlth:numeric Number of bad mental health days
-#* @param PhysHlth:numeric Number of bad physical health days
-#* @param DiffWalk:integer Indicator for difficulty walking
-#* @param Sex:integer Sex of the individual
-#* @param Education:integer Education level
-#* @param Income:integer Income level
 #* @get /pred
 function(BMI = default_values['BMI'],
          Age = default_values['Age'],
@@ -60,20 +60,7 @@ function(BMI = default_values['BMI'],
          CholCheck = default_values['CholCheck'],
          Smoker = default_values['Smoker'],
          Stroke = default_values['Stroke'],
-         HeartDiseaseorAttack = default_values['HeartDiseaseorAttack'],
-         PhysActivity = default_values['PhysActivity'],
-         Fruits = default_values['Fruits'],
-         Veggies = default_values['Veggies'],
-         HvyAlcoholConsump = default_values['HvyAlcoholConsump'],
-         AnyHealthcare = default_values['AnyHealthcare'],
-         NoDocbcCost = default_values['NoDocbcCost'],
-         GenHlth = default_values['GenHlth'],
-         MentHlth = default_values['MentHlth'],
-         PhysHlth = default_values['PhysHlth'],
-         DiffWalk = default_values['DiffWalk'],
-         Sex = default_values['Sex'],
-         Education = default_values['Education'],
-         Income = default_values['Income']) {
+         HeartDiseaseorAttack = default_values['HeartDiseaseorAttack']) {
   
   # Create a data frame with the input values
   input_data <- data.frame(BMI = as.numeric(BMI),
@@ -83,20 +70,7 @@ function(BMI = default_values['BMI'],
                            CholCheck = as.factor(CholCheck),
                            Smoker = as.factor(Smoker),
                            Stroke = as.factor(Stroke),
-                           HeartDiseaseorAttack = as.factor(HeartDiseaseorAttack),
-                           PhysActivity = as.factor(PhysActivity),
-                           Fruits = as.factor(Fruits),
-                           Veggies = as.factor(Veggies),
-                           HvyAlcoholConsump = as.factor(HvyAlcoholConsump),
-                           AnyHealthcare = as.factor(AnyHealthcare),
-                           NoDocbcCost = as.factor(NoDocbcCost),
-                           GenHlth = as.factor(GenHlth),
-                           MentHlth = as.numeric(MentHlth),
-                           PhysHlth = as.numeric(PhysHlth),
-                           DiffWalk = as.factor(DiffWalk),
-                           Sex = as.factor(Sex),
-                           Education = as.factor(Education),
-                           Income = as.factor(Income))
+                           HeartDiseaseorAttack = as.factor(HeartDiseaseorAttack))
   
   # Predict the probability of diabetes
   prediction <- predict(best_model, input_data, type = "response")
@@ -113,3 +87,8 @@ function() {
     github_url = "https://github.com/hbali23/FinalProject"
   )
 }
+
+# Example function calls
+# curl -X GET "http://127.0.0.1:8000/pred"
+# curl -X GET "http://127.0.0.1:8000/pred?BMI=25.0&Age=50&HighBP=yes&HighChol=yes&Stroke=no&HeartDiseaseorAttack=no&PhysActivity=yes&Fruits=yes&Veggies=yes&HvyAlcoholConsump=no&GenHlth=3&MentHlth=2&PhysHlth=2&DiffWalk=no&Education=3&Income=4"
+# curl -X GET "http://127.0.0.1:8000

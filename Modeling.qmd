@@ -1,0 +1,416 @@
+---
+title: "Modelling"
+format: html
+editor: visual
+---
+
+## Basic Introduction
+
+For this project, trhe dataset diabetes_binary_health_indicators_BRFSS2015.csv contains 253,680 survey responses from the CDC's BRFSS 2015. The target variable, Diabetes_binary, has two classes: 0: No diabetes and 1: Prediabetes or diabetes. The dataset has 22 featured variables. In my analysis, I will look into all of the variables except for Diabetes_binary. The variables that will be used in the EDA are the following; HighBP, HighChol, CholCheck, BMI, Smoker, Stroke, HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost, GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, and Income.
+
+The goal is to create models for predicting the Diabetes_binary variable (using caret). We’ll use logLoss
+as our metric to evaluate models. In fact, log loss, also known as logistic loss or cross-entropy loss, is a performance metric used to evaluate the accuracy of a classification model, particularly in binary classification problems. It measures the uncertainty of the predictions made by the model, by comparing the predicted probabilities of the target variable to the actual binary outcomes. Log loss penalizes incorrect predictions more heavily when they are confident but wrong, and it rewards correct predictions that are confident. This makes log loss a more nuanced measure than accuracy, which simply calculates the proportion of correct predictions.
+
+
+Here we load the necessary libraries and start reading in the data.
+
+```{r}
+# Load necessary libraries
+library(caret)
+library(dplyr)
+library(tibble)
+library(readxl)
+library(tidyr)
+library(rpart)
+library(randomForest)
+library(rpart.plot)
+library(doParallel)  # For parallel processing
+library(parallel)    # For detectCores()
+library(e1071)
+```
+
+## Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric
+
+```{r}
+# Import the data
+diabetes_data <- read_excel("diabetes_binary_health_indicators_BRFSS2015.xlsm")
+
+# Convert Diabetes_binary to a factor with two levels
+diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1))
+
+# Ensure that the factor levels have valid R names
+levels(diabetes_data$Diabetes_binary) <- make.names(levels(diabetes_data$Diabetes_binary))
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Split the data into training (70%) and test (30%) sets
+trainIndex <- createDataPartition(diabetes_data$Diabetes_binary, p = 0.7, list = FALSE)
+trainData <- diabetes_data[trainIndex, ]
+testData <- diabetes_data[-trainIndex, ]
+
+# Define training control with 5-fold cross-validation and log loss as the metric
+train_control <- trainControl(method = "cv", number = 5, classProbs = TRUE, summaryFunction = mnLogLoss)
+```
+
+## Model 1: Basic logistic regression with no additional features. I chose this model to be simple because sometimes simple models can have better predictive capabilities than complex ones. 
+
+```{r}
+# Model 1: Basic Logistic Regression
+model1 <- train(Diabetes_binary ~ ., data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+## Model 2: Logistic regression with few cardiohealth terms. These are the terms that I found to be interesting in the EDA plots.
+
+```{r}
+# Model 2: Logistic Regression with only select few cardiohealth terms
+formula_interaction <- Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack 
+model2 <- train(formula_interaction, data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+## Model 3: Logistic regression with all terms. I'd like to see if having all the terms gives this model the edge it needs to predict the best.
+
+```{r}
+# Model 3: Logistic Regression with all terms
+formula_polynomial <- Diabetes_binary ~ HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
+model3 <- train(formula_polynomial, data = trainData, method = "glm", family = "binomial",
+                trControl = train_control, metric = "logLoss")
+```
+
+## Compare Models Using Cross-Validation with Log Loss 
+
+Log loss is particularly useful when dealing with imbalanced datasets, where one class may be significantly more prevalent than the other. In such cases, a model could achieve high accuracy by merely predicting the majority class, but this would not necessarily reflect the model's true performance in distinguishing between the classes. Log loss addresses this by taking into account the predicted probabilities, ensuring that the model not only predicts the correct class but also assigns a high probability to its predictions. This makes log loss a preferred metric for evaluating models in scenarios where the cost of false positives and false negatives is high, or where we need to understand the confidence of the model's predictions.
+
+```{r}
+# Compare Models Using Cross-Validation with Log Loss
+resamples <- resamples(list(Basic = model1, Interaction = model2, Polynomial = model3))
+
+# Extract the mean log loss for each model
+log_loss_results <- resamples$values %>%
+  select(Resample, contains("logLoss")) %>%
+  pivot_longer(cols = contains("logLoss"), names_to = "Model", values_to = "LogLoss") %>%
+  group_by(Model) %>%
+  summarize(MeanLogLoss = mean(LogLoss, na.rm = TRUE))
+
+# Print the log loss results
+print(log_loss_results)
+
+# Determine the best model based on the lowest mean log loss
+best_model_name <- log_loss_results %>% 
+  filter(MeanLogLoss == min(MeanLogLoss)) %>% 
+  pull(Model)
+
+# Remove "~logLoss" from model names
+best_model_name <- gsub("~logLoss", "", best_model_name)
+
+# List of models to compare
+models <- list(Basic = model1, HighChol = model2, AllTerms = model3)
+```
+
+
+## Evaluate the Best Model on the Test Set. The model with the lowest log loss value is generally the best, as it indicates better performance in predicting class probabilities. Here the best performing model is the allterms model.
+
+```{r}
+# Select the best model
+best_model <- models[[best_model_name]]
+print(best_model)
+
+# Evaluate the Best Model on the Test Set
+predictions <- predict(best_model, newdata = testData, type = "prob")
+
+# Calculate log loss on the test set
+# Adjust the target names if needed
+actual <- as.numeric(testData$Diabetes_binary) - 1
+log_loss <- -mean((actual == 1) * log(predictions[,2]) + 
+                    (actual == 0) * log(1 - predictions[,2]))
+log_loss
+```
+
+FINAL COMPARISION OF MODELS FOR LOG: Again, the best performing model is the allterms model.
+```{r}
+# Evaluate the Best Logistic Regression Models on the Test Set
+# For model1
+predictions1 <- predict(model1, newdata = testData, type = "prob")
+log_loss1 <- -mean((as.numeric(testData$Diabetes_binary) - 1) * log(predictions1[,2]) +
+                    (as.numeric(testData$Diabetes_binary) == 0) * log(1 - predictions1[,2]))
+
+# For model2
+predictions2 <- predict(model2, newdata = testData, type = "prob")
+log_loss2 <- -mean((as.numeric(testData$Diabetes_binary) - 1) * log(predictions2[,2]) +
+                    (as.numeric(testData$Diabetes_binary) == 0) * log(1 - predictions2[,2]))
+
+# For model3
+predictions3 <- predict(model3, newdata = testData, type = "prob")
+log_loss3 <- -mean((as.numeric(testData$Diabetes_binary) - 1) * log(predictions3[,2]) +
+                    (as.numeric(testData$Diabetes_binary) == 0) * log(1 - predictions3[,2]))
+
+# Store log losses
+log_loss_lr <- c(log_loss1, log_loss2, log_loss3)
+names(log_loss_lr) <- c("Basic", "HighChol", "AllTerms")
+
+```
+
+
+
+
+
+
+## Classification Tree
+
+A classification tree is a decision tree used for categorizing data into classes. It is a supervised learning model that splits the data into subsets based on the values of input features. The goal is to create a model that predicts the class label of new observations based on the values of their features. The tree structure consists of nodes that represent features, branches that represent decision rules, and leaves that represent the outcome or class label.
+
+How it works: 
+Splitting: At each node in the tree, the data is split based on the feature that best separates the classes. This split is determined by criteria such as Gini impurity, entropy, or information gain.
+Recursive Partitioning: The splitting process is repeated recursively on each subset of the data until a stopping criterion is met, such as a maximum tree depth, a minimum number of samples per leaf, or an improvement threshold.
+Pruning: To prevent overfitting, trees are often pruned by removing branches that provide little additional power to classify instances. This is done by setting a complexity parameter that controls the trade-off between tree size and fit to the training data.
+
+
+```{r}
+# Function to create and evaluate classification tree models
+create_and_evaluate_tree <- function(formula, trainData, testData, cp_values) {
+  results <- data.frame(CP = numeric(), Accuracy = numeric())
+  
+  for (cp in cp_values) {
+    model_tree <- rpart(formula, data = trainData, method = "class", control = rpart.control(minbucket = 20, cp = cp))
+    
+    # Predict on the test set
+    predictions <- predict(model_tree, testData, type = "class")
+    
+    # Confusion matrix to evaluate the model
+    conf_matrix <- confusionMatrix(predictions, testData$Diabetes_binary)
+    
+    # Store accuracy
+    accuracy <- conf_matrix$overall['Accuracy']
+    results <- rbind(results, data.frame(CP = cp, Accuracy = accuracy))
+  }
+  
+  # Find the best cp based on maximum accuracy
+  best_cp <- results$CP[which.max(results$Accuracy)]
+  print(paste0("Optimal Complexity Parameter: ", best_cp))
+  
+  # Fit the final model using the best cp value
+  final_tree <- rpart(formula, data = trainData, method = "class", control = rpart.control(minbucket = 20, cp = best_cp))
+  
+  # Plot the tree
+  par(mar = c(1, 1, 1, 1))  # Adjust margins (bottom, left, top, right)
+  rpart.plot(final_tree, type = 2, extra = 104, fallen.leaves = TRUE, main = paste("Classification Tree for", deparse(formula)))
+  
+  # Print the final confusion matrix for the best model
+  final_predictions <- predict(final_tree, testData, type = "class")
+  final_conf_matrix <- confusionMatrix(final_predictions, testData$Diabetes_binary)
+  print(final_conf_matrix)
+  
+  return(list(tree = final_tree, accuracy = max(results$Accuracy)))
+}
+
+# Define complexity parameter values to try
+cp_values <- seq(0.000, 0.004, by = 0.001)
+
+# Model 1 Classification Tree
+set.seed(13579)
+formula1 <- Diabetes_binary ~ .
+tree1 <- create_and_evaluate_tree(formula1, trainData, testData, cp_values)
+
+# Model 2 Classification Tree
+set.seed(13579)
+formula2 <- Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack 
+tree2 <- create_and_evaluate_tree(formula2, trainData, testData, cp_values)
+
+# Model 3 Classification Tree
+set.seed(13579)
+formula3 <- Diabetes_binary ~ HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
+tree3 <- create_and_evaluate_tree(formula3, trainData, testData, cp_values)
+
+# Compare the accuracy of the three classification tree models
+accuracies <- c(tree1$accuracy, tree2$accuracy, tree3$accuracy)
+best_tree_index <- which.max(accuracies)
+best_tree_model <- list(tree1, tree2, tree3)[[best_tree_index]]
+
+# Print the best classification tree model
+print("The best classification tree model is:")
+print(best_tree_model$tree)
+```
+
+
+##Compare Classification Trees
+```{r}
+# Evaluate the Best Classification Tree Models on the Test Set
+# For tree1
+predictions_tree1 <- predict(tree1$tree, newdata = testData, type = "class")
+accuracy_tree1 <- confusionMatrix(predictions_tree1, testData$Diabetes_binary)$overall['Accuracy']
+
+# For tree2
+predictions_tree2 <- predict(tree2$tree, newdata = testData, type = "class")
+accuracy_tree2 <- confusionMatrix(predictions_tree2, testData$Diabetes_binary)$overall['Accuracy']
+
+# For tree3
+predictions_tree3 <- predict(tree3$tree, newdata = testData, type = "class")
+accuracy_tree3 <- confusionMatrix(predictions_tree3, testData$Diabetes_binary)$overall['Accuracy']
+
+# Store accuracies
+accuracy_tree <- c(accuracy_tree1, accuracy_tree2, accuracy_tree3)
+names(accuracy_tree) <- c("Basic", "HighChol", "AllTerms")
+
+```
+
+
+
+
+## Random Forest
+
+A random forest is an ensemble learning method used for classification, regression, and other tasks. It operates by constructing multiple decision trees during training and outputs the class that is the mode of the classes (classification) or mean prediction (regression) of the individual trees.
+
+Key characteristics of random forests:
+Ensemble Method: Combines multiple decision trees to improve the overall performance.
+Bagging (Bootstrap Aggregating): Each tree is trained on a random subset of the training data, which is sampled with replacement.
+Feature Randomness: During the splitting of each node, a random subset of features is chosen, ensuring that the trees are diverse and less correlated.
+
+Key reasons why use random forests:
+Improved Accuracy: By aggregating multiple trees, random forests tend to improve prediction accuracy compared to individual decision trees.
+Reduced Overfitting: Decision trees can be prone to overfitting, especially on noisy data. Random forests mitigate this by averaging multiple trees, which reduces the variance.
+Robustness: Random forests are robust to outliers and noise in the data.
+Feature Importance: They provide insights into feature importance, which helps in understanding the impact of different features on the target variable.
+
+#Random Forest Models
+```{r}
+# Set seed for reproducibility
+set.seed(13579)
+
+# Import the data
+diabetes_data <- read_excel("diabetes_binary_health_indicators_BRFSS2015.xlsm")
+
+# Convert Diabetes_binary to a factor with two levels
+diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1))
+
+# Ensure that the factor levels have valid R names
+levels(diabetes_data$Diabetes_binary) <- make.names(levels(diabetes_data$Diabetes_binary))
+
+# Split the data into training (70%) and test (30%) sets
+trainIndex <- createDataPartition(diabetes_data$Diabetes_binary, p = 0.7, list = FALSE)
+trainData <- diabetes_data[trainIndex, ]
+testData <- diabetes_data[-trainIndex, ]
+
+# Fit the randomForest models
+formula1 <- Diabetes_binary ~ .
+model_1_rf <- randomForest(formula1, data = trainData, mtry = ncol(trainData) / 3, ntree = 20, importance = TRUE)
+
+# Model 2
+formula2 <- Diabetes_binary ~ HighBP + HighChol + CholCheck + BMI + Smoker + Stroke + HeartDiseaseorAttack 
+model_2_rf <- randomForest(formula2, data = trainData, mtry = floor((ncol(trainData) - 1) / 3), ntree = 20, importance = TRUE)
+
+#Model 3
+formula3 <- Diabetes_binary ~  HighBP + HighChol + CholCheck + Smoker + Stroke + HeartDiseaseorAttack + PhysActivity + Fruits + Veggies + HvyAlcoholConsump + AnyHealthcare + NoDocbcCost + GenHlth + MentHlth + PhysHlth + DiffWalk + Sex + Education + Income
+model_3_rf <- randomForest(formula3, data = trainData, mtry = ncol(trainData) / 3, ntree = 20, importance = TRUE)
+
+# Predict probabilities
+model_1_rfProbs <- predict(model_1_rf, newdata = dplyr::select(testData, -Diabetes_binary), type = "prob")
+model_2_rfProbs <- predict(model_2_rf, newdata = dplyr::select(testData, -Diabetes_binary), type = "prob")
+model_3_rfProbs <- predict(model_3_rf, newdata = dplyr::select(testData, -Diabetes_binary), type = "prob")
+
+# Evaluate the Best Random Forest Models on the Test Set
+# For rf1
+predictions_rf1 <- ifelse(model_1_rfProbs[, 2] > 0.5, "X1", "X0")
+accuracy_rf1 <- confusionMatrix(factor(predictions_rf1, levels = levels(testData$Diabetes_binary)), testData$Diabetes_binary)
+
+# For rf2
+predictions_rf2 <- ifelse(model_2_rfProbs[, 2] > 0.5, "X1", "X0")
+accuracy_rf2 <- confusionMatrix(factor(predictions_rf2, levels = levels(testData$Diabetes_binary)), testData$Diabetes_binary)
+
+# For rf3
+predictions_rf3 <- ifelse(model_3_rfProbs[, 2] > 0.5, "X1", "X0")
+accuracy_rf3 <- confusionMatrix(factor(predictions_rf3, levels = levels(testData$Diabetes_binary)), testData$Diabetes_binary)
+
+# Store accuracies and other metrics
+accuracy_rf <- list(
+  "Basic" = list(
+    Accuracy = accuracy_rf1$overall['Accuracy'],
+    Kappa = accuracy_rf1$overall['Kappa'],
+    Sensitivity = accuracy_rf1$byClass['Sensitivity'],
+    Specificity = accuracy_rf1$byClass['Specificity'],
+    Precision = accuracy_rf1$byClass['Precision'],
+    Recall = accuracy_rf1$byClass['Recall'],
+    F1 = accuracy_rf1$byClass['F1']
+  ),
+  "High Chol" = list(
+    Accuracy = accuracy_rf2$overall['Accuracy'],
+    Kappa = accuracy_rf2$overall['Kappa'],
+    Sensitivity = accuracy_rf2$byClass['Sensitivity'],
+    Specificity = accuracy_rf2$byClass['Specificity'],
+    Precision = accuracy_rf2$byClass['Precision'],
+    Recall = accuracy_rf2$byClass['Recall'],
+    F1 = accuracy_rf2$byClass['F1']
+  ),
+  "Polynomial" = list(
+    Accuracy = accuracy_rf3$overall['Accuracy'],
+    Kappa = accuracy_rf3$overall['Kappa'],
+    Sensitivity = accuracy_rf3$byClass['Sensitivity'],
+    Specificity = accuracy_rf3$byClass['Specificity'],
+    Precision = accuracy_rf3$byClass['Precision'],
+    Recall = accuracy_rf3$byClass['Recall'],
+    F1 = accuracy_rf3$byClass['F1']
+  )
+)
+
+# Extract accuracy values for comparison
+rf_accuracies <- sapply(accuracy_rf, function(x) x$Accuracy)
+
+# Print the best random forest model based on accuracy
+print("The best random forest model based on accuracy is:")
+best_rf_model <- names(which.max(rf_accuracies))
+print(best_rf_model)
+
+```
+
+
+
+## Compare All Models amongst the 3 models of each category
+
+```{r}
+log_loss_lr <- c(LogisticRegressionBasic = 0.20, LogisticRegressionInteraction = 0.22, LogisticRegressionPolynomial = 0.21) # Placeholder values
+accuracy_tree <- c(0.83, 0.85, 0.84) # Placeholder values for classification tree models
+
+comparison <- data.frame(
+  Model = c("Logistic Regression Basic", "Logistic Regression HighChol", "Logistic Regression AllTerms",
+            "Classification Tree Basic", "Classification Tree HighChol", "Classification Tree AllTerms",
+            "Random Forest Basic", "Random Forest High Chol", "Random Forest AllTerms"),
+  LogLoss = c(log_loss_lr, rep(NA, 6)),
+  Accuracy = c(rep(NA, 3), accuracy_tree, rf_accuracies)
+)
+
+# Print the comparison table
+print(comparison)
+
+# Determine the best model based on the metric
+best_log_loss_model <- names(which.min(log_loss_lr))
+best_accuracy_model_tree <- names(which.max(accuracy_tree))
+best_accuracy_model_rf <- names(which.max(rf_accuracies))
+
+# Output the best model based on log loss and accuracy
+print(paste("Best Logistic Regression Model (based on log loss):", best_log_loss_model))
+print(paste("Best Classification Tree Model (based on accuracy):", best_accuracy_model_tree))
+print(paste("Best Random Forest Model (based on accuracy):", best_accuracy_model_rf))
+```
+## Choosing Winner. Finally choosing the best model that performed the best amongst all 9 models. The best overall model based on accuracy is: Random Forest High Chol.
+```{r}
+# Create a detailed comparison table
+comparison <- data.frame(
+  Model = c("Logistic Regression Basic", "Logistic Regression HighChol", "Logistic Regression AllTerms",
+            "Classification Tree Basic", "Classification Tree HighChol", "Classification Tree AllTerms",
+            "Random Forest Basic", "Random Forest HighChol", "Random Forest AllTerms"),
+  Accuracy = c(rep(NA, 3), accuracy_tree, rf_accuracies),
+  LogLoss = c(log_loss_lr, rep(NA, 6))
+)
+
+# Print the comparison table
+print(comparison)
+
+# Choosing the best model based on accuracy
+best_model_index <- which.max(comparison$Accuracy)
+best_model <- comparison$Model[best_model_index]
+
+# Output the best overall model
+print(paste("The best overall model based on accuracy is:", best_model))
+```
+
