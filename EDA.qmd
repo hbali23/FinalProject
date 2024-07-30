@@ -180,4 +180,4 @@ The visualizations created during the EDA, such as histograms and box plots, ill
 
 Overall, these exploratory analyses not only offer a better understanding of diabetes distribution among various factors but also inform the development of predictive models. By examining these relationships, we can identify key variables to include in our models and better tailor our approaches to predicting diabetes risk. Based off the plots, I believe the best variables to use in the model include but are not limited to the following; HighBP + HighChol, CholCheck, BMI, Smoker, Stroke and HeartDiseaseorAttack.
 
-[Click here for the Modeling Page](docs/Modeling.html)
+[Click here for the Modeling Page](Modeling.html)
