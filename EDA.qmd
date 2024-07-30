@@ -22,7 +22,7 @@ library(readxl)
 
 ```{r}
 # Import the data
-diabetes_data <- read_excel("Downloads/diabetes_binary_health_indicators_BRFSS2015.xlsm")
+diabetes_data <- read_excel("diabetes_binary_health_indicators_BRFSS2015.xlsm")
 
 # Convert variables to factors
 diabetes_data$Diabetes_binary <- factor(diabetes_data$Diabetes_binary, levels = c(0, 1), labels = c("No Diabetes", "Prediabetes or Diabetes"))

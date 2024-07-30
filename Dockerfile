@@ -1,5 +1,5 @@
 # start from the rstudio/plumber image
-FROM rocker/r-ver:4.3.1
+FROM rocker/r-ver:4.2.3
 
 # install the linux libraries needed for plumber
 RUN apt-get update -qq && apt-get install -y libssl-dev libcurl4-gnutls-dev libpng-dev libsodium-dev
