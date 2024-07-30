@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.55">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Modeling</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Modeling</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="basic-introduction" class="level2">
+<h2 class="anchored" data-anchor-id="basic-introduction">Basic Introduction</h2>
+<p>For this project, the dataset diabetes_binary_health_indicators_BRFSS2015.csv contains 253,680 survey responses from the CDC’s BRFSS 2015. The target variable, Diabetes_binary, has two classes: 0: No diabetes and 1: Prediabetes or diabetes. The dataset has 22 featured variables. In my analysis, I will look into all of the variables except for Diabetes_binary. The variables that will be used in the EDA are the following; HighBP, HighChol, CholCheck, BMI, Smoker, Stroke, HeartDiseaseorAttack, PhysActivity, Fruits, Veggies, HvyAlcoholConsump, AnyHealthcare, NoDocbcCost, GenHlth, MentHlth, PhysHlth, DiffWalk, Sex, Age, Education, and Income.</p>
+<p>The goal is to create models for predicting the Diabetes_binary variable (using caret). We’ll use logLoss as our metric to evaluate models. In fact, log loss, also known as logistic loss or cross-entropy loss, is a performance metric used to evaluate the accuracy of a classification model, particularly in binary classification problems. It measures the uncertainty of the predictions made by the model, by comparing the predicted probabilities of the target variable to the actual binary outcomes. Log loss penalizes incorrect predictions more heavily when they are confident but wrong, and it rewards correct predictions that are confident. This makes log loss a more nuanced measure than accuracy, which simply calculates the proportion of correct predictions.</p>
+<p>Here we load the necessary libraries and start reading in the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load necessary libraries</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(caret)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: ggplot2</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: lattice</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rpart)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(randomForest)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>randomForest 4.7-1.1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Type rfNews() to see new features/changes/bug fixes.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'randomForest'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:dplyr':
+
+    combine</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:ggplot2':
+
+    margin</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rpart.plot)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(doParallel)  <span class="co"># For parallel processing</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: foreach</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: iterators</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: parallel</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(parallel)    <span class="co"># For detectCores()</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(e1071)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="adjust-factor-levels-and-set-up-cross-validation-and-log-loss-metric" class="level2">
+<h2 class="anchored" data-anchor-id="adjust-factor-levels-and-set-up-cross-validation-and-log-loss-metric">Adjust Factor Levels and Set Up Cross-Validation and Log Loss Metric</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>diabetes_data <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"diabetes_binary_health_indicators_BRFSS2015.xlsm"</span>)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Diabetes_binary to a factor with two levels</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>diabetes_data<span class="sc">$</span>Diabetes_binary <span class="ot">&lt;-</span> <span class="fu">factor</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure that the factor levels have valid R names</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary) <span class="ot">&lt;-</span> <span class="fu">make.names</span>(<span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary))</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the data into training (70%) and test (30%) sets</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>trainIndex <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>trainData <span class="ot">&lt;-</span> diabetes_data[trainIndex, ]</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>testData <span class="ot">&lt;-</span> diabetes_data[<span class="sc">-</span>trainIndex, ]</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Define training control with 5-fold cross-validation and log loss as the metric</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>train_control <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">"cv"</span>, <span class="at">number =</span> <span class="dv">5</span>, <span class="at">classProbs =</span> <span class="cn">TRUE</span>, <span class="at">summaryFunction =</span> mnLogLoss)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-1-basic-logistic-regression-with-no-additional-features.-i-chose-this-model-to-be-simple-because-sometimes-simple-models-can-have-better-predictive-capabilities-than-complex-ones." class="level2">
+<h2 class="anchored" data-anchor-id="model-1-basic-logistic-regression-with-no-additional-features.-i-chose-this-model-to-be-simple-because-sometimes-simple-models-can-have-better-predictive-capabilities-than-complex-ones.">Model 1: Basic logistic regression with no additional features. I chose this model to be simple because sometimes simple models can have better predictive capabilities than complex ones.</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1: Basic Logistic Regression</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>model1 <span class="ot">&lt;-</span> <span class="fu">train</span>(Diabetes_binary <span class="sc">~</span> ., <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-2-logistic-regression-with-few-cardiohealth-terms.-these-are-the-terms-that-i-found-to-be-interesting-in-the-eda-plots." class="level2">
+<h2 class="anchored" data-anchor-id="model-2-logistic-regression-with-few-cardiohealth-terms.-these-are-the-terms-that-i-found-to-be-interesting-in-the-eda-plots.">Model 2: Logistic regression with few cardiohealth terms. These are the terms that I found to be interesting in the EDA plots.</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2: Logistic Regression with only select few cardiohealth terms</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>formula_interaction <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>model2 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_interaction, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-3-logistic-regression-with-all-terms.-id-like-to-see-if-having-all-the-terms-gives-this-model-the-edge-it-needs-to-predict-the-best." class="level2">
+<h2 class="anchored" data-anchor-id="model-3-logistic-regression-with-all-terms.-id-like-to-see-if-having-all-the-terms-gives-this-model-the-edge-it-needs-to-predict-the-best.">Model 3: Logistic regression with all terms. I’d like to see if having all the terms gives this model the edge it needs to predict the best.</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3: Logistic Regression with all terms</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>formula_polynomial <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>model3 <span class="ot">&lt;-</span> <span class="fu">train</span>(formula_polynomial, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"glm"</span>, <span class="at">family =</span> <span class="st">"binomial"</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">trControl =</span> train_control, <span class="at">metric =</span> <span class="st">"logLoss"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="compare-models-using-cross-validation-with-log-loss" class="level2">
+<h2 class="anchored" data-anchor-id="compare-models-using-cross-validation-with-log-loss">Compare Models Using Cross-Validation with Log Loss</h2>
+<p>Log loss is particularly useful when dealing with imbalanced datasets, where one class may be significantly more prevalent than the other. In such cases, a model could achieve high accuracy by merely predicting the majority class, but this would not necessarily reflect the model’s true performance in distinguishing between the classes. Log loss addresses this by taking into account the predicted probabilities, ensuring that the model not only predicts the correct class but also assigns a high probability to its predictions. This makes log loss a preferred metric for evaluating models in scenarios where the cost of false positives and false negatives is high, or where we need to understand the confidence of the model’s predictions.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare Models Using Cross-Validation with Log Loss</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>resamples <span class="ot">&lt;-</span> <span class="fu">resamples</span>(<span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">Interaction =</span> model2, <span class="at">Polynomial =</span> model3))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract the mean log loss for each model</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>log_loss_results <span class="ot">&lt;-</span> resamples<span class="sc">$</span>values <span class="sc">%&gt;%</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Resample, <span class="fu">contains</span>(<span class="st">"logLoss"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">contains</span>(<span class="st">"logLoss"</span>), <span class="at">names_to =</span> <span class="st">"Model"</span>, <span class="at">values_to =</span> <span class="st">"LogLoss"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Model) <span class="sc">%&gt;%</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">MeanLogLoss =</span> <span class="fu">mean</span>(LogLoss, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the log loss results</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(log_loss_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 2
+  Model               MeanLogLoss
+  &lt;chr&gt;                     &lt;dbl&gt;
+1 Basic~logLoss             0.321
+2 Interaction~logLoss       0.343
+3 Polynomial~logLoss        0.332</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the best model based on the lowest mean log loss</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> log_loss_results <span class="sc">%&gt;%</span> </span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(MeanLogLoss <span class="sc">==</span> <span class="fu">min</span>(MeanLogLoss)) <span class="sc">%&gt;%</span> </span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(Model)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove "~logLoss" from model names</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"~logLoss"</span>, <span class="st">""</span>, best_model_name)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co"># List of models to compare</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">Basic =</span> model1, <span class="at">HighChol =</span> model2, <span class="at">AllTerms =</span> model3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="evaluate-the-best-model-on-the-test-set.-the-model-with-the-lowest-log-loss-value-is-generally-the-best-as-it-indicates-better-performance-in-predicting-class-probabilities.-here-the-best-performing-model-is-the-allterms-model." class="level2">
+<h2 class="anchored" data-anchor-id="evaluate-the-best-model-on-the-test-set.-the-model-with-the-lowest-log-loss-value-is-generally-the-best-as-it-indicates-better-performance-in-predicting-class-probabilities.-here-the-best-performing-model-is-the-allterms-model.">Evaluate the Best Model on the Test Set. The model with the lowest log loss value is generally the best, as it indicates better performance in predicting class probabilities. Here the best performing model is the allterms model.</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select the best model</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> models[[best_model_name]]</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generalized Linear Model 
+
+177577 samples
+    21 predictor
+     2 classes: 'X0', 'X1' 
+
+No pre-processing
+Resampling: Cross-Validated (5 fold) 
+Summary of sample sizes: 142061, 142061, 142061, 142062, 142063 
+Resampling results:
+
+  logLoss  
+  0.3209772</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Model on the Test Set</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(best_model, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate log loss on the test set</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Adjust the target names if needed</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>actual <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>log_loss <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((actual <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions[,<span class="dv">2</span>]) <span class="sc">+</span> </span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>                    (actual <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions[,<span class="dv">2</span>]))</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>log_loss</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3169865</code></pre>
+</div>
+</div>
+<p>FINAL COMPARISION OF MODELS FOR LOG: Again, the best performing model is the allterms model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Logistic Regression Models on the Test Set</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For model1</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>predictions1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model1, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>log_loss1 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions1[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions1[,<span class="dv">2</span>]))</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="co"># For model2</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>predictions2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model2, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>log_loss2 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions2[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions2[,<span class="dv">2</span>]))</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a><span class="co"># For model3</span></span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>predictions3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(model3, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>log_loss3 <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fu">mean</span>((<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> <span class="fu">log</span>(predictions3[,<span class="dv">2</span>]) <span class="sc">+</span></span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>                    (<span class="fu">as.numeric</span>(testData<span class="sc">$</span>Diabetes_binary) <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">*</span> <span class="fu">log</span>(<span class="dv">1</span> <span class="sc">-</span> predictions3[,<span class="dv">2</span>]))</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Store log losses</span></span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>log_loss_lr <span class="ot">&lt;-</span> <span class="fu">c</span>(log_loss1, log_loss2, log_loss3)</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(log_loss_lr) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Basic"</span>, <span class="st">"HighChol"</span>, <span class="st">"AllTerms"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="classification-tree" class="level2">
+<h2 class="anchored" data-anchor-id="classification-tree">Classification Tree</h2>
+<p>A classification tree is a decision tree used for categorizing data into classes. It is a supervised learning model that splits the data into subsets based on the values of input features. The goal is to create a model that predicts the class label of new observations based on the values of their features. The tree structure consists of nodes that represent features, branches that represent decision rules, and leaves that represent the outcome or class label.</p>
+<p>How it works: Splitting: At each node in the tree, the data is split based on the feature that best separates the classes. This split is determined by criteria such as Gini impurity, entropy, or information gain. Recursive Partitioning: The splitting process is repeated recursively on each subset of the data until a stopping criterion is met, such as a maximum tree depth, a minimum number of samples per leaf, or an improvement threshold. Pruning: To prevent overfitting, trees are often pruned by removing branches that provide little additional power to classify instances. This is done by setting a complexity parameter that controls the trade-off between tree size and fit to the training data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to create and evaluate classification tree models</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>create_and_evaluate_tree <span class="ot">&lt;-</span> <span class="cf">function</span>(formula, trainData, testData, cp_values) {</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">CP =</span> <span class="fu">numeric</span>(), <span class="at">Accuracy =</span> <span class="fu">numeric</span>())</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (cp <span class="cf">in</span> cp_values) {</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    model_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> cp))</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predict on the test set</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Confusion matrix to evaluate the model</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Store accuracy</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    accuracy <span class="ot">&lt;-</span> conf_matrix<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    results <span class="ot">&lt;-</span> <span class="fu">rbind</span>(results, <span class="fu">data.frame</span>(<span class="at">CP =</span> cp, <span class="at">Accuracy =</span> accuracy))</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the best cp based on maximum accuracy</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>  best_cp <span class="ot">&lt;-</span> results<span class="sc">$</span>CP[<span class="fu">which.max</span>(results<span class="sc">$</span>Accuracy)]</span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste0</span>(<span class="st">"Optimal Complexity Parameter: "</span>, best_cp))</span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fit the final model using the best cp value</span></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>  final_tree <span class="ot">&lt;-</span> <span class="fu">rpart</span>(formula, <span class="at">data =</span> trainData, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">control =</span> <span class="fu">rpart.control</span>(<span class="at">minbucket =</span> <span class="dv">20</span>, <span class="at">cp =</span> best_cp))</span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Plot the tree</span></span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>))  <span class="co"># Adjust margins (bottom, left, top, right)</span></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rpart.plot</span>(final_tree, <span class="at">type =</span> <span class="dv">2</span>, <span class="at">extra =</span> <span class="dv">104</span>, <span class="at">fallen.leaves =</span> <span class="cn">TRUE</span>, <span class="at">main =</span> <span class="fu">paste</span>(<span class="st">"Classification Tree for"</span>, <span class="fu">deparse</span>(formula)))</span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print the final confusion matrix for the best model</span></span>
+<span id="cb31-31"><a href="#cb31-31" aria-hidden="true" tabindex="-1"></a>  final_predictions <span class="ot">&lt;-</span> <span class="fu">predict</span>(final_tree, testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb31-32"><a href="#cb31-32" aria-hidden="true" tabindex="-1"></a>  final_conf_matrix <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(final_predictions, testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb31-33"><a href="#cb31-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(final_conf_matrix)</span>
+<span id="cb31-34"><a href="#cb31-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb31-35"><a href="#cb31-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">list</span>(<span class="at">tree =</span> final_tree, <span class="at">accuracy =</span> <span class="fu">max</span>(results<span class="sc">$</span>Accuracy)))</span>
+<span id="cb31-36"><a href="#cb31-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb31-37"><a href="#cb31-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-38"><a href="#cb31-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Define complexity parameter values to try</span></span>
+<span id="cb31-39"><a href="#cb31-39" aria-hidden="true" tabindex="-1"></a>cp_values <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.000</span>, <span class="fl">0.004</span>, <span class="at">by =</span> <span class="fl">0.001</span>)</span>
+<span id="cb31-40"><a href="#cb31-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-41"><a href="#cb31-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 1 Classification Tree</span></span>
+<span id="cb31-42"><a href="#cb31-42" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb31-43"><a href="#cb31-43" aria-hidden="true" tabindex="-1"></a>formula1 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> .</span>
+<span id="cb31-44"><a href="#cb31-44" aria-hidden="true" tabindex="-1"></a>tree1 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula1, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Modeling_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction    X0    X1
+        X0 64696  9379
+        X1   804  1224
+                                          
+               Accuracy : 0.8662          
+                 95% CI : (0.8638, 0.8686)
+    No Information Rate : 0.8607          
+    P-Value [Acc &gt; NIR] : 5.056e-06       
+                                          
+                  Kappa : 0.1561          
+                                          
+ Mcnemar's Test P-Value : &lt; 2.2e-16       
+                                          
+            Sensitivity : 0.9877          
+            Specificity : 0.1154          
+         Pos Pred Value : 0.8734          
+         Neg Pred Value : 0.6036          
+             Prevalence : 0.8607          
+         Detection Rate : 0.8501          
+   Detection Prevalence : 0.9734          
+      Balanced Accuracy : 0.5516          
+                                          
+       'Positive' Class : X0              
+                                          </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2 Classification Tree</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>formula2 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>tree2 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula2, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Modeling_files/figure-html/unnamed-chunk-9-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction    X0    X1
+        X0 64751  9640
+        X1   749   963
+                                         
+               Accuracy : 0.8635         
+                 95% CI : (0.861, 0.8659)
+    No Information Rate : 0.8607         
+    P-Value [Acc &gt; NIR] : 0.01255        
+                                         
+                  Kappa : 0.1224         
+                                         
+ Mcnemar's Test P-Value : &lt; 2e-16        
+                                         
+            Sensitivity : 0.98856        
+            Specificity : 0.09082        
+         Pos Pred Value : 0.87041        
+         Neg Pred Value : 0.56250        
+             Prevalence : 0.86068        
+         Detection Rate : 0.85083        
+   Detection Prevalence : 0.97750        
+      Balanced Accuracy : 0.53969        
+                                         
+       'Positive' Class : X0             
+                                         </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 3 Classification Tree</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>formula3 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>tree3 <span class="ot">&lt;-</span> <span class="fu">create_and_evaluate_tree</span>(formula3, trainData, testData, cp_values)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Optimal Complexity Parameter: 0.001"</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Modeling_files/figure-html/unnamed-chunk-9-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction    X0    X1
+        X0 65048 10016
+        X1   452   587
+                                        
+               Accuracy : 0.8624        
+                 95% CI : (0.86, 0.8649)
+    No Information Rate : 0.8607        
+    P-Value [Acc &gt; NIR] : 0.07939       
+                                        
+                  Kappa : 0.0779        
+                                        
+ Mcnemar's Test P-Value : &lt; 2e-16       
+                                        
+            Sensitivity : 0.99310       
+            Specificity : 0.05536       
+         Pos Pred Value : 0.86657       
+         Neg Pred Value : 0.56497       
+             Prevalence : 0.86068       
+         Detection Rate : 0.85474       
+   Detection Prevalence : 0.98635       
+      Balanced Accuracy : 0.52423       
+                                        
+       'Positive' Class : X0            
+                                        </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare the accuracy of the three classification tree models</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>accuracies <span class="ot">&lt;-</span> <span class="fu">c</span>(tree1<span class="sc">$</span>accuracy, tree2<span class="sc">$</span>accuracy, tree3<span class="sc">$</span>accuracy)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>best_tree_index <span class="ot">&lt;-</span> <span class="fu">which.max</span>(accuracies)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>best_tree_model <span class="ot">&lt;-</span> <span class="fu">list</span>(tree1, tree2, tree3)[[best_tree_index]]</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the best classification tree model</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"The best classification tree model is:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best classification tree model is:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_tree_model<span class="sc">$</span>tree)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>n= 177577 
+
+node), split, n, loss, yval, (yprob)
+      * denotes terminal node
+
+   1) root 177577 24743 X0 (0.8606633 0.1393367)  
+     2) HighBP&lt; 0.5 101219  6167 X0 (0.9390727 0.0609273) *
+     3) HighBP&gt;=0.5 76358 18576 X0 (0.7567249 0.2432751)  
+       6) GenHlth&lt; 3.5 56188 10556 X0 (0.8121307 0.1878693) *
+       7) GenHlth&gt;=3.5 20170  8020 X0 (0.6023798 0.3976202)  
+        14) BMI&lt; 27.5 6931  1891 X0 (0.7271678 0.2728322) *
+        15) BMI&gt;=27.5 13239  6129 X0 (0.5370496 0.4629504)  
+          30) HighChol&lt; 0.5 4134  1457 X0 (0.6475568 0.3524432) *
+          31) HighChol&gt;=0.5 9105  4433 X1 (0.4868753 0.5131247)  
+            62) BMI&lt; 34.5 5211  2383 X0 (0.5426981 0.4573019)  
+             124) Age&lt; 6.5 530   161 X0 (0.6962264 0.3037736) *
+             125) Age&gt;=6.5 4681  2222 X0 (0.5253151 0.4746849)  
+               250) HvyAlcoholConsump&gt;=0.5 128    30 X0 (0.7656250 0.2343750) *
+               251) HvyAlcoholConsump&lt; 0.5 4553  2192 X0 (0.5185592 0.4814408)  
+                 502) GenHlth&lt; 4.5 3162  1455 X0 (0.5398482 0.4601518) *
+                 503) GenHlth&gt;=4.5 1391   654 X1 (0.4701653 0.5298347)  
+                  1006) HeartDiseaseorAttack&lt; 0.5 767   358 X0 (0.5332464 0.4667536)  
+                    2012) PhysHlth&gt;=15.5 581   249 X0 (0.5714286 0.4285714) *
+                    2013) PhysHlth&lt; 15.5 186    77 X1 (0.4139785 0.5860215) *
+                  1007) HeartDiseaseorAttack&gt;=0.5 624   245 X1 (0.3926282 0.6073718) *
+            63) BMI&gt;=34.5 3894  1605 X1 (0.4121726 0.5878274) *</code></pre>
+</div>
+</div>
+<p>##Compare Classification Trees</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Classification Tree Models on the Test Set</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree1</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>predictions_tree1 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree1<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>accuracy_tree1 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree1, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree2</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>predictions_tree2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree2<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>accuracy_tree2 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree2, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a><span class="co"># For tree3</span></span>
+<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>predictions_tree3 <span class="ot">&lt;-</span> <span class="fu">predict</span>(tree3<span class="sc">$</span>tree, <span class="at">newdata =</span> testData, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>accuracy_tree3 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(predictions_tree3, testData<span class="sc">$</span>Diabetes_binary)<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>]</span>
+<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Store accuracies</span></span>
+<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>accuracy_tree <span class="ot">&lt;-</span> <span class="fu">c</span>(accuracy_tree1, accuracy_tree2, accuracy_tree3)</span>
+<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(accuracy_tree) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Basic"</span>, <span class="st">"HighChol"</span>, <span class="st">"AllTerms"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="random-forest" class="level2">
+<h2 class="anchored" data-anchor-id="random-forest">Random Forest</h2>
+<p>A random forest is an ensemble learning method used for classification, regression, and other tasks. It operates by constructing multiple decision trees during training and outputs the class that is the mode of the classes (classification) or mean prediction (regression) of the individual trees.</p>
+<p>Key characteristics of random forests: Ensemble Method: Combines multiple decision trees to improve the overall performance. Bagging (Bootstrap Aggregating): Each tree is trained on a random subset of the training data, which is sampled with replacement. Feature Randomness: During the splitting of each node, a random subset of features is chosen, ensuring that the trees are diverse and less correlated.</p>
+<p>Key reasons why use random forests: Improved Accuracy: By aggregating multiple trees, random forests tend to improve prediction accuracy compared to individual decision trees. Reduced Overfitting: Decision trees can be prone to overfitting, especially on noisy data. Random forests mitigate this by averaging multiple trees, which reduces the variance. Robustness: Random forests are robust to outliers and noise in the data. Feature Importance: They provide insights into feature importance, which helps in understanding the impact of different features on the target variable.</p>
+<p>#Random Forest Models</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set seed for reproducibility</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">13579</span>)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the data</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>diabetes_data <span class="ot">&lt;-</span> <span class="fu">read_excel</span>(<span class="st">"diabetes_binary_health_indicators_BRFSS2015.xlsm"</span>)</span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Diabetes_binary to a factor with two levels</span></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>diabetes_data<span class="sc">$</span>Diabetes_binary <span class="ot">&lt;-</span> <span class="fu">factor</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">levels =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>))</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure that the factor levels have valid R names</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary) <span class="ot">&lt;-</span> <span class="fu">make.names</span>(<span class="fu">levels</span>(diabetes_data<span class="sc">$</span>Diabetes_binary))</span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the data into training (70%) and test (30%) sets</span></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>trainIndex <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(diabetes_data<span class="sc">$</span>Diabetes_binary, <span class="at">p =</span> <span class="fl">0.7</span>, <span class="at">list =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>trainData <span class="ot">&lt;-</span> diabetes_data[trainIndex, ]</span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>testData <span class="ot">&lt;-</span> diabetes_data[<span class="sc">-</span>trainIndex, ]</span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit the randomForest models</span></span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>formula1 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> .</span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>model_1_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula1, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">ncol</span>(trainData) <span class="sc">/</span> <span class="dv">3</span>, <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Model 2</span></span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>formula2 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span> HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> BMI <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack </span>
+<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a>model_2_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula2, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">floor</span>((<span class="fu">ncol</span>(trainData) <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">3</span>), <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a><span class="co">#Model 3</span></span>
+<span id="cb45-27"><a href="#cb45-27" aria-hidden="true" tabindex="-1"></a>formula3 <span class="ot">&lt;-</span> Diabetes_binary <span class="sc">~</span>  HighBP <span class="sc">+</span> HighChol <span class="sc">+</span> CholCheck <span class="sc">+</span> Smoker <span class="sc">+</span> Stroke <span class="sc">+</span> HeartDiseaseorAttack <span class="sc">+</span> PhysActivity <span class="sc">+</span> Fruits <span class="sc">+</span> Veggies <span class="sc">+</span> HvyAlcoholConsump <span class="sc">+</span> AnyHealthcare <span class="sc">+</span> NoDocbcCost <span class="sc">+</span> GenHlth <span class="sc">+</span> MentHlth <span class="sc">+</span> PhysHlth <span class="sc">+</span> DiffWalk <span class="sc">+</span> Sex <span class="sc">+</span> Education <span class="sc">+</span> Income</span>
+<span id="cb45-28"><a href="#cb45-28" aria-hidden="true" tabindex="-1"></a>model_3_rf <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(formula3, <span class="at">data =</span> trainData, <span class="at">mtry =</span> <span class="fu">ncol</span>(trainData) <span class="sc">/</span> <span class="dv">3</span>, <span class="at">ntree =</span> <span class="dv">20</span>, <span class="at">importance =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb45-29"><a href="#cb45-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-30"><a href="#cb45-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict probabilities</span></span>
+<span id="cb45-31"><a href="#cb45-31" aria-hidden="true" tabindex="-1"></a>model_1_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_1_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-32"><a href="#cb45-32" aria-hidden="true" tabindex="-1"></a>model_2_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_2_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-33"><a href="#cb45-33" aria-hidden="true" tabindex="-1"></a>model_3_rfProbs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model_3_rf, <span class="at">newdata =</span> dplyr<span class="sc">::</span><span class="fu">select</span>(testData, <span class="sc">-</span>Diabetes_binary), <span class="at">type =</span> <span class="st">"prob"</span>)</span>
+<span id="cb45-34"><a href="#cb45-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-35"><a href="#cb45-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate the Best Random Forest Models on the Test Set</span></span>
+<span id="cb45-36"><a href="#cb45-36" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf1</span></span>
+<span id="cb45-37"><a href="#cb45-37" aria-hidden="true" tabindex="-1"></a>predictions_rf1 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_1_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-38"><a href="#cb45-38" aria-hidden="true" tabindex="-1"></a>accuracy_rf1 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf1, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-39"><a href="#cb45-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-40"><a href="#cb45-40" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf2</span></span>
+<span id="cb45-41"><a href="#cb45-41" aria-hidden="true" tabindex="-1"></a>predictions_rf2 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_2_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-42"><a href="#cb45-42" aria-hidden="true" tabindex="-1"></a>accuracy_rf2 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf2, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-43"><a href="#cb45-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-44"><a href="#cb45-44" aria-hidden="true" tabindex="-1"></a><span class="co"># For rf3</span></span>
+<span id="cb45-45"><a href="#cb45-45" aria-hidden="true" tabindex="-1"></a>predictions_rf3 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(model_3_rfProbs[, <span class="dv">2</span>] <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="st">"X1"</span>, <span class="st">"X0"</span>)</span>
+<span id="cb45-46"><a href="#cb45-46" aria-hidden="true" tabindex="-1"></a>accuracy_rf3 <span class="ot">&lt;-</span> <span class="fu">confusionMatrix</span>(<span class="fu">factor</span>(predictions_rf3, <span class="at">levels =</span> <span class="fu">levels</span>(testData<span class="sc">$</span>Diabetes_binary)), testData<span class="sc">$</span>Diabetes_binary)</span>
+<span id="cb45-47"><a href="#cb45-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-48"><a href="#cb45-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Store accuracies and other metrics</span></span>
+<span id="cb45-49"><a href="#cb45-49" aria-hidden="true" tabindex="-1"></a>accuracy_rf <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb45-50"><a href="#cb45-50" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Basic"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-51"><a href="#cb45-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf1<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-52"><a href="#cb45-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf1<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-53"><a href="#cb45-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-54"><a href="#cb45-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-55"><a href="#cb45-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-56"><a href="#cb45-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-57"><a href="#cb45-57" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf1<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-58"><a href="#cb45-58" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb45-59"><a href="#cb45-59" aria-hidden="true" tabindex="-1"></a>  <span class="st">"High Chol"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-60"><a href="#cb45-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf2<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-61"><a href="#cb45-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf2<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-62"><a href="#cb45-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-63"><a href="#cb45-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-64"><a href="#cb45-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-65"><a href="#cb45-65" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-66"><a href="#cb45-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf2<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-67"><a href="#cb45-67" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb45-68"><a href="#cb45-68" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Polynomial"</span> <span class="ot">=</span> <span class="fu">list</span>(</span>
+<span id="cb45-69"><a href="#cb45-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">Accuracy =</span> accuracy_rf3<span class="sc">$</span>overall[<span class="st">'Accuracy'</span>],</span>
+<span id="cb45-70"><a href="#cb45-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">Kappa =</span> accuracy_rf3<span class="sc">$</span>overall[<span class="st">'Kappa'</span>],</span>
+<span id="cb45-71"><a href="#cb45-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sensitivity =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Sensitivity'</span>],</span>
+<span id="cb45-72"><a href="#cb45-72" aria-hidden="true" tabindex="-1"></a>    <span class="at">Specificity =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Specificity'</span>],</span>
+<span id="cb45-73"><a href="#cb45-73" aria-hidden="true" tabindex="-1"></a>    <span class="at">Precision =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Precision'</span>],</span>
+<span id="cb45-74"><a href="#cb45-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">Recall =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'Recall'</span>],</span>
+<span id="cb45-75"><a href="#cb45-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">F1 =</span> accuracy_rf3<span class="sc">$</span>byClass[<span class="st">'F1'</span>]</span>
+<span id="cb45-76"><a href="#cb45-76" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb45-77"><a href="#cb45-77" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb45-78"><a href="#cb45-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-79"><a href="#cb45-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract accuracy values for comparison</span></span>
+<span id="cb45-80"><a href="#cb45-80" aria-hidden="true" tabindex="-1"></a>rf_accuracies <span class="ot">&lt;-</span> <span class="fu">sapply</span>(accuracy_rf, <span class="cf">function</span>(x) x<span class="sc">$</span>Accuracy)</span>
+<span id="cb45-81"><a href="#cb45-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-82"><a href="#cb45-82" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the best random forest model based on accuracy</span></span>
+<span id="cb45-83"><a href="#cb45-83" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"The best random forest model based on accuracy is:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best random forest model based on accuracy is:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>best_rf_model <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(rf_accuracies))</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(best_rf_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "High Chol.Accuracy"</code></pre>
+</div>
+</div>
+</section>
+<section id="compare-all-models-amongst-the-3-models-of-each-category" class="level2">
+<h2 class="anchored" data-anchor-id="compare-all-models-amongst-the-3-models-of-each-category">Compare All Models amongst the 3 models of each category</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>log_loss_lr <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">LogisticRegressionBasic =</span> <span class="fl">0.20</span>, <span class="at">LogisticRegressionInteraction =</span> <span class="fl">0.22</span>, <span class="at">LogisticRegressionPolynomial =</span> <span class="fl">0.21</span>) <span class="co"># Placeholder values</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>accuracy_tree <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.83</span>, <span class="fl">0.85</span>, <span class="fl">0.84</span>) <span class="co"># Placeholder values for classification tree models</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"Logistic Regression Basic"</span>, <span class="st">"Logistic Regression HighChol"</span>, <span class="st">"Logistic Regression AllTerms"</span>,</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Classification Tree Basic"</span>, <span class="st">"Classification Tree HighChol"</span>, <span class="st">"Classification Tree AllTerms"</span>,</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Random Forest Basic"</span>, <span class="st">"Random Forest High Chol"</span>, <span class="st">"Random Forest AllTerms"</span>),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">LogLoss =</span> <span class="fu">c</span>(log_loss_lr, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">6</span>)),</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Accuracy =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">3</span>), accuracy_tree, rf_accuracies)</span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the comparison table</span></span>
+<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         Model LogLoss  Accuracy
+1    Logistic Regression Basic    0.20        NA
+2 Logistic Regression HighChol    0.22        NA
+3 Logistic Regression AllTerms    0.21        NA
+4    Classification Tree Basic      NA 0.8300000
+5 Classification Tree HighChol      NA 0.8500000
+6 Classification Tree AllTerms      NA 0.8400000
+7          Random Forest Basic      NA 0.8590726
+8      Random Forest High Chol      NA 0.8621605
+9       Random Forest AllTerms      NA 0.8547495</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Determine the best model based on the metric</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>best_log_loss_model <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.min</span>(log_loss_lr))</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>best_accuracy_model_tree <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(accuracy_tree))</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>best_accuracy_model_rf <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(rf_accuracies))</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Output the best model based on log loss and accuracy</span></span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Logistic Regression Model (based on log loss):"</span>, best_log_loss_model))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Logistic Regression Model (based on log loss): LogisticRegressionBasic"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Classification Tree Model (based on accuracy):"</span>, best_accuracy_model_tree))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Classification Tree Model (based on accuracy): "</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Best Random Forest Model (based on accuracy):"</span>, best_accuracy_model_rf))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Best Random Forest Model (based on accuracy): High Chol.Accuracy"</code></pre>
+</div>
+</div>
+</section>
+<section id="choosing-winner.-finally-choosing-the-best-model-that-performed-the-best-amongst-all-9-models.-the-best-overall-model-based-on-accuracy-is-random-forest-high-chol." class="level2">
+<h2 class="anchored" data-anchor-id="choosing-winner.-finally-choosing-the-best-model-that-performed-the-best-amongst-all-9-models.-the-best-overall-model-based-on-accuracy-is-random-forest-high-chol.">Choosing Winner. Finally choosing the best model that performed the best amongst all 9 models. The best overall model based on accuracy is: Random Forest High Chol.</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a detailed comparison table</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"Logistic Regression Basic"</span>, <span class="st">"Logistic Regression HighChol"</span>, <span class="st">"Logistic Regression AllTerms"</span>,</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Classification Tree Basic"</span>, <span class="st">"Classification Tree HighChol"</span>, <span class="st">"Classification Tree AllTerms"</span>,</span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Random Forest Basic"</span>, <span class="st">"Random Forest HighChol"</span>, <span class="st">"Random Forest AllTerms"</span>),</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Accuracy =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">3</span>), accuracy_tree, rf_accuracies),</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">LogLoss =</span> <span class="fu">c</span>(log_loss_lr, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">6</span>))</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the comparison table</span></span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comparison)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         Model  Accuracy LogLoss
+1    Logistic Regression Basic        NA    0.20
+2 Logistic Regression HighChol        NA    0.22
+3 Logistic Regression AllTerms        NA    0.21
+4    Classification Tree Basic 0.8300000      NA
+5 Classification Tree HighChol 0.8500000      NA
+6 Classification Tree AllTerms 0.8400000      NA
+7          Random Forest Basic 0.8590726      NA
+8       Random Forest HighChol 0.8621605      NA
+9       Random Forest AllTerms 0.8547495      NA</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Choosing the best model based on accuracy</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>best_model_index <span class="ot">&lt;-</span> <span class="fu">which.max</span>(comparison<span class="sc">$</span>Accuracy)</span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> comparison<span class="sc">$</span>Model[best_model_index]</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Output the best overall model</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"The best overall model based on accuracy is:"</span>, best_model))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "The best overall model based on accuracy is: Random Forest HighChol"</code></pre>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
